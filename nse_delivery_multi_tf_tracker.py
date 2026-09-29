@@ -249,8 +249,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     avg_vol_30 = vol_30 / len(h30)
 
     # Base Strategy Conditions
-    cond1 = (avg_deliv_30 < avg_deliv_5) and (avg_deliv_5 < yest_deliv_pct)
-    cond2 = (avg_vol_30 < avg_vol_5) and (avg_vol_5 < yest_vol)
+    cond1 = (avg_deliv_30 < avg_deliv_5) and (avg_deliv_5 < yest_deliv_pct)  # Deliv Inc
+    cond2 = (avg_vol_30 < avg_vol_5) and (avg_vol_5 < yest_vol)              # Vol Exp
+    cond_vol_dec = (avg_vol_30 > avg_vol_5) and (avg_vol_5 > yest_vol)      # Vol Dec (30D Vol > 5D Vol > Yest Vol)
+
     strict_accumulation = cond1 and cond2
 
     # Multi-Timeframe Candle Info
@@ -265,8 +267,14 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
 
     all_candles_green = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN")
     
-    multi_tf_vol_expansion = cond2 and all_candles_green
-    multi_tf_deliv_accumulation = cond1 and all_candles_green
+    # User Defined Multi-TF Strategy Rules:
+    # 1. Multi-TF Vol Expansion: Cond 2 (Vol Exp) AND Cond 1 (Deliv Inc) AND 1D+1W+1M Green
+    multi_tf_vol_expansion = cond2 and cond1 and all_candles_green
+    
+    # 2. Multi-TF Deliv Accumulation: Cond 1 (Deliv Inc) AND Vol Dec (30D > 5D > Yest) AND 1D+1W+1M Green
+    multi_tf_deliv_accumulation = cond1 and cond_vol_dec and all_candles_green
+    
+    # 3. Multi-TF Super Signal: Cond 1 + Cond 2 AND 1D+1W+1M Green
     multi_tf_super_signal = strict_accumulation and all_candles_green
 
     return {
@@ -286,6 +294,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "30D Avg Vol": int(avg_vol_30),
         "Cond 1 (Deliv Inc)": cond1,
         "Cond 2 (Vol Exp)": cond2,
+        "Vol Dec (30D>5D>Yest)": cond_vol_dec,
         "Strict Accumulation": "YES" if strict_accumulation else "NO",
         "All Candles Green": "YES" if all_candles_green else "NO",
         "Multi-TF Vol Expansion": "YES" if multi_tf_vol_expansion else "NO",
