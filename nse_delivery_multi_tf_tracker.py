@@ -150,9 +150,9 @@ def fetch_multi_tf_candles(symbols):
         ticker = f"{sym}.NS"
         try:
             if ticker in data.columns.levels[0]:
-                df_sym = data[ticker].dropna(how="all").copy()
+                df_sym = data[ticker].dropna(subset=["Close", "Open"]).copy()
             elif len(symbols) == 1:
-                df_sym = data.dropna(how="all").copy()
+                df_sym = data.dropna(subset=["Close", "Open"]).copy()
             else:
                 continue
 
