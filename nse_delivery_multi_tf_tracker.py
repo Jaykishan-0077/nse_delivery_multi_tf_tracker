@@ -279,15 +279,18 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # Match Rule: 1D GREEN AND 1W GREEN AND 1M GREEN AND Prev 1M RED
     all_candles_match = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN") and (cand_prev_1m == "RED")
     
-    # User Defined Multi-TF Strategy Rules:
-    # 1. Multi-TF Vol Expansion: Cond 2 (Vol Exp) AND Cond 1 (Deliv Inc) AND 1D+1W+1M Green + Prev 1M Red
-    multi_tf_vol_expansion = cond2 and cond1 and all_candles_match
-    
-    # 2. Multi-TF Deliv Accumulation: Cond 1 (Deliv Inc) AND Vol Dec (30D > 5D > Yest) AND 1D+1W+1M Green + Prev 1M Red
+    # User Defined 4 Strategy Rules:
+    # 1. Pure Vol Exp + Deliv Acc: Cond 2 (Vol Exp) AND Cond 1 (Deliv Inc) [No Candle Filter]
+    pure_vol_exp_deliv_acc = cond2 and cond1
+
+    # 2. Pure Deliv Acc + Vol Dec: Cond 1 (Deliv Inc) AND Vol Dec (30D > 5D > Yest) [No Candle Filter]
+    pure_deliv_acc_vol_dec = cond1 and cond_vol_dec
+
+    # 3. Multi-TF Super Signal: Cond 2 (Vol Exp) AND Cond 1 (Deliv Inc) AND 1D+1W+1M Green + Prev 1M Red
+    multi_tf_super_signal = cond2 and cond1 and all_candles_match
+
+    # 4. Multi-TF Deliv Accumulation: Cond 1 (Deliv Inc) AND Vol Dec (30D > 5D > Yest) AND 1D+1W+1M Green + Prev 1M Red
     multi_tf_deliv_accumulation = cond1 and cond_vol_dec and all_candles_match
-    
-    # 3. Multi-TF Super Signal: Cond 1 + Cond 2 AND 1D+1W+1M Green + Prev 1M Red
-    multi_tf_super_signal = strict_accumulation and all_candles_match
 
     return {
         "Symbol": symbol,
@@ -308,11 +311,11 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Cond 1 (Deliv Inc)": cond1,
         "Cond 2 (Vol Exp)": cond2,
         "Vol Dec (30D>5D>Yest)": cond_vol_dec,
-        "Strict Accumulation": "YES" if strict_accumulation else "NO",
         "All Candles Match": "YES" if all_candles_match else "NO",
-        "Multi-TF Vol Expansion": "YES" if multi_tf_vol_expansion else "NO",
-        "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO",
-        "Multi-TF Super Signal": "YES" if multi_tf_super_signal else "NO"
+        "Pure Vol Exp + Deliv Acc": "YES" if pure_vol_exp_deliv_acc else "NO",
+        "Pure Deliv Acc + Vol Dec": "YES" if pure_deliv_acc_vol_dec else "NO",
+        "Multi-TF Super Signal": "YES" if multi_tf_super_signal else "NO",
+        "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO"
     }
 
 
