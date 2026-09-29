@@ -141,6 +141,8 @@ def fetch_multi_tf_candles(symbols):
     candle_dict = {}
     today_dt = datetime.now()
     current_month_start = datetime(today_dt.year, today_dt.month, 1)
+    prev_month_end = current_month_start - timedelta(days=1)
+    prev_month_start = datetime(prev_month_end.year, prev_month_end.month, 1)
     current_week_start = today_dt - timedelta(days=today_dt.weekday())  # Monday of current week
     current_week_start = datetime(current_week_start.year, current_week_start.month, current_week_start.day)
 
@@ -172,26 +174,34 @@ def fetch_multi_tf_candles(symbols):
                 open_1w  = float(df_week.iloc[0]["Open"])
                 close_1w = float(df_week.iloc[-1]["Close"])
             else:
-                # Fallback to last 5 trading days if current week subset is empty
                 open_1w  = float(df_sym.iloc[-min(5, len(df_sym))]["Open"])
                 close_1w = float(df_sym.iloc[-1]["Close"])
             is_1w_green = close_1w > open_1w
 
-            # 1M Candle (Monthly) - Open of first trading day of current month vs Latest Close
+            # 1M Candle (Current Monthly) - Open of first trading day of current month vs Latest Close
             df_month = df_sym[df_sym.index >= pd.Timestamp(current_month_start)]
             if not df_month.empty:
                 open_1m  = float(df_month.iloc[0]["Open"])
                 close_1m = float(df_month.iloc[-1]["Close"])
             else:
-                # Fallback to last 20 trading days
                 open_1m  = float(df_sym.iloc[-min(20, len(df_sym))]["Open"])
                 close_1m = float(df_sym.iloc[-1]["Close"])
             is_1m_green = close_1m > open_1m
+
+            # Prev 1M Candle (Previous Monthly) - Open vs Close of previous calendar month
+            df_prev_month = df_sym[(df_sym.index >= pd.Timestamp(prev_month_start)) & (df_sym.index <= pd.Timestamp(prev_month_end))]
+            if not df_prev_month.empty:
+                open_prev_1m  = float(df_prev_month.iloc[0]["Open"])
+                close_prev_1m = float(df_prev_month.iloc[-1]["Close"])
+                is_prev_1m_red = close_prev_1m < open_prev_1m
+            else:
+                is_prev_1m_red = False
 
             candle_dict[sym] = {
                 "1D Candle": "GREEN" if is_1d_green else "RED",
                 "1W Candle": "GREEN" if is_1w_green else "RED",
                 "1M Candle": "GREEN" if is_1m_green else "RED",
+                "Prev 1M Candle": "RED" if is_prev_1m_red else "GREEN",
                 "1D %": round(((close_1d - open_1d) / open_1d) * 100, 2),
                 "1W %": round(((close_1w - open_1w) / open_1w) * 100, 2),
                 "1M %": round(((close_1m - open_1m) / open_1m) * 100, 2),
@@ -207,7 +217,7 @@ def fetch_multi_tf_candles(symbols):
 def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     """
     Compute volume-weighted delivery % and volume averages for a symbol,
-    and combine with 1D, 1W, 1M candle positivity.
+    and combine with 1D GREEN + 1W GREEN + 1M GREEN + Prev 1M RED candles.
     """
     date_keys = sorted(daily_dfs.keys(), key=lambda x: datetime.strptime(x, "%d%m%Y"), reverse=True)
     if not date_keys:
@@ -257,25 +267,27 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
 
     # Multi-Timeframe Candle Info
     c_info = candle_dict.get(symbol, {
-        "1D Candle": "N/A", "1W Candle": "N/A", "1M Candle": "N/A",
+        "1D Candle": "N/A", "1W Candle": "N/A", "1M Candle": "N/A", "Prev 1M Candle": "N/A",
         "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0
     })
 
     cand_1d = c_info["1D Candle"]
     cand_1w = c_info["1W Candle"]
     cand_1m = c_info["1M Candle"]
+    cand_prev_1m = c_info.get("Prev 1M Candle", "N/A")
 
-    all_candles_green = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN")
+    # Match Rule: 1D GREEN AND 1W GREEN AND 1M GREEN AND Prev 1M RED
+    all_candles_match = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN") and (cand_prev_1m == "RED")
     
     # User Defined Multi-TF Strategy Rules:
-    # 1. Multi-TF Vol Expansion: Cond 2 (Vol Exp) AND Cond 1 (Deliv Inc) AND 1D+1W+1M Green
-    multi_tf_vol_expansion = cond2 and cond1 and all_candles_green
+    # 1. Multi-TF Vol Expansion: Cond 2 (Vol Exp) AND Cond 1 (Deliv Inc) AND 1D+1W+1M Green + Prev 1M Red
+    multi_tf_vol_expansion = cond2 and cond1 and all_candles_match
     
-    # 2. Multi-TF Deliv Accumulation: Cond 1 (Deliv Inc) AND Vol Dec (30D > 5D > Yest) AND 1D+1W+1M Green
-    multi_tf_deliv_accumulation = cond1 and cond_vol_dec and all_candles_green
+    # 2. Multi-TF Deliv Accumulation: Cond 1 (Deliv Inc) AND Vol Dec (30D > 5D > Yest) AND 1D+1W+1M Green + Prev 1M Red
+    multi_tf_deliv_accumulation = cond1 and cond_vol_dec and all_candles_match
     
-    # 3. Multi-TF Super Signal: Cond 1 + Cond 2 AND 1D+1W+1M Green
-    multi_tf_super_signal = strict_accumulation and all_candles_green
+    # 3. Multi-TF Super Signal: Cond 1 + Cond 2 AND 1D+1W+1M Green + Prev 1M Red
+    multi_tf_super_signal = strict_accumulation and all_candles_match
 
     return {
         "Symbol": symbol,
@@ -283,6 +295,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D Candle": cand_1d,
         "1W Candle": cand_1w,
         "1M Candle": cand_1m,
+        "Prev 1M Candle": cand_prev_1m,
         "1D %": c_info["1D %"],
         "1W %": c_info["1W %"],
         "1M %": c_info["1M %"],
@@ -296,7 +309,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Cond 2 (Vol Exp)": cond2,
         "Vol Dec (30D>5D>Yest)": cond_vol_dec,
         "Strict Accumulation": "YES" if strict_accumulation else "NO",
-        "All Candles Green": "YES" if all_candles_green else "NO",
+        "All Candles Match": "YES" if all_candles_match else "NO",
         "Multi-TF Vol Expansion": "YES" if multi_tf_vol_expansion else "NO",
         "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO",
         "Multi-TF Super Signal": "YES" if multi_tf_super_signal else "NO"
