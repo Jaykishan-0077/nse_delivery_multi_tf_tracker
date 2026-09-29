@@ -140,24 +140,35 @@ def build_whatsapp_report(df):
     """Format summary message for WhatsApp and Telegram."""
     date_str = datetime.now().strftime("%d-%b-%Y")
     super_df = df[df["Multi-TF Super Signal"] == "YES"]
+    vol_exp_df = df[df["Multi-TF Vol Expansion"] == "YES"]
+    deliv_acc_df = df[df["Multi-TF Deliv Accumulation"] == "YES"]
     
-    msg = f"🌟 *NSE MULTI-TIMEFRAME SUPER ACCUMULATION REPORT* ({date_str})\n"
+    msg = f"🌟 *NSE MULTI-TIMEFRAME SCANNER REPORT* ({date_str})\n"
     msg += f"─────────────────────────────────────────────\n"
     msg += f"🔍 Total Nifty 500 Stocks: {len(df)}\n"
+    msg += f"🚀 *Multi-TF Volume Expansion*: {len(vol_exp_df)} stocks\n"
+    msg += f"📦 *Multi-TF Delivery Accumulation*: {len(deliv_acc_df)} stocks\n"
     msg += f"🔥 *Multi-TF Super Signals*: {len(super_df)} stocks\n"
     msg += f"   *(Deliv % ↑ AND Vol Exp ↑ AND 1D + 1W + 1M Green Candles)*\n\n"
     
-    if super_df.empty:
-        msg += "⚠️ No stocks matched all 5 Multi-TF Super Accumulation criteria today."
-    else:
+    if not super_df.empty:
         msg += f"🏆 *TOP MULTI-TF SUPER ACCUMULATION STOCKS*:\n"
-        for idx, row in super_df.head(15).iterrows():
-            msg += f"• *{row['Symbol']}* (₹{row['Price (₹)']}): Deliv {row['Yest Deliv %']}% (5D: {row['5D Deliv %']}%) | Vol {row['Yest Volume']:,} | 🟢 1D ({row['1D %']}%) 1W ({row['1W %']}%) 1M ({row['1M %']}%)\n"
+        for idx, row in super_df.head(10).iterrows():
+            msg += f"• *{row['Symbol']}* (₹{row['Price (₹)']}): Deliv {row['Yest Deliv %']}% | Vol {row['Yest Volume']:,} | 🟢 1D ({row['1D %']}%) 1W ({row['1W %']}%) 1M ({row['1M %']}%)\n"
+        if len(super_df) > 10:
+            msg += f"...and {len(super_df) - 10} more in attached Excel.\n"
+        msg += "\n"
+    elif not vol_exp_df.empty:
+        msg += f"📈 *TOP MULTI-TF VOLUME EXPANSION STOCKS*:\n"
+        for idx, row in vol_exp_df.head(10).iterrows():
+            msg += f"• *{row['Symbol']}* (₹{row['Price (₹)']}): Vol {row['Yest Volume']:,} (5D: {row['5D Avg Vol']:,}) | 🟢 1D ({row['1D %']}%) 1W ({row['1W %']}%) 1M ({row['1M %']}%)\n"
+        if len(vol_exp_df) > 10:
+            msg += f"...and {len(vol_exp_df) - 10} more in attached Excel.\n"
+        msg += "\n"
+    else:
+        msg += "⚠️ No stocks matched all Multi-TF criteria today.\n\n"
             
-        if len(super_df) > 15:
-            msg += f"\n...and {len(super_df) - 15} more stocks in attached Excel workbook.\n"
-            
-    msg += f"\n📁 Complete Multi-Timeframe report attached below (.xlsx Excel workbook)."
+    msg += f"📁 Complete Multi-Timeframe report attached below (.xlsx Excel workbook with 4 tabs)."
     return msg
 
 
@@ -198,9 +209,13 @@ def run_daily_notification():
     
     df_res.to_csv(csv_file, index=False)
     
-    # Generate openpyxl Excel workbook with 2 sheets
+    # Generate openpyxl Excel workbook with 4 sheets
     with pd.ExcelWriter(excel_file, engine="openpyxl") as writer:
         df_res.to_excel(writer, sheet_name="Nifty 500 Multi-TF Signals", index=False)
+        vol_exp_df = df_res[df_res["Multi-TF Vol Expansion"] == "YES"]
+        vol_exp_df.to_excel(writer, sheet_name="Multi-TF Volume Expansion", index=False)
+        deliv_acc_df = df_res[df_res["Multi-TF Deliv Accumulation"] == "YES"]
+        deliv_acc_df.to_excel(writer, sheet_name="Multi-TF Delivery Accumulation", index=False)
         super_df = df_res[df_res["Multi-TF Super Signal"] == "YES"]
         super_df.to_excel(writer, sheet_name="Multi-TF Super Accumulation", index=False)
         

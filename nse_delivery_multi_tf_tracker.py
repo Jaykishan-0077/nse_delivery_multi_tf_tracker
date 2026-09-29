@@ -264,6 +264,9 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     cand_1m = c_info["1M Candle"]
 
     all_candles_green = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN")
+    
+    multi_tf_vol_expansion = cond2 and all_candles_green
+    multi_tf_deliv_accumulation = cond1 and all_candles_green
     multi_tf_super_signal = strict_accumulation and all_candles_green
 
     return {
@@ -285,6 +288,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Cond 2 (Vol Exp)": cond2,
         "Strict Accumulation": "YES" if strict_accumulation else "NO",
         "All Candles Green": "YES" if all_candles_green else "NO",
+        "Multi-TF Vol Expansion": "YES" if multi_tf_vol_expansion else "NO",
+        "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO",
         "Multi-TF Super Signal": "YES" if multi_tf_super_signal else "NO"
     }
 
