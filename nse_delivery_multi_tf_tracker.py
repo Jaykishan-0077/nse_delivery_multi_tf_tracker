@@ -125,20 +125,13 @@ def fetch_all_mto(target_days=30):
 
 def fetch_multi_tf_candles(symbols):
     """
-    Download daily OHLC price history for Nifty 500 symbols via yfinance
+    Download daily OHLC price history for stock symbols via yfinance
     and calculate 1D, 1W, and 1M candle positivity (GREEN vs RED).
+    Supports large symbol lists by auto-chunking (400 per chunk).
     """
-    print("📈 Fetching multi-timeframe candle data (Daily, Weekly, Monthly) via yfinance...")
-    yf_symbols = [f"{s}.NS" for s in symbols]
-    
-    try:
-        # Download 6 months of daily data to have sufficient buffer for monthly/weekly calculations
-        data = yf.download(yf_symbols, period="6mo", interval="1d", group_by="ticker", progress=False)
-    except Exception as e:
-        print(f"⚠️ Error downloading price data via yfinance: {e}")
-        return {}
-
+    print(f"📈 Fetching multi-timeframe candle data for {len(symbols)} stocks via yfinance...")
     candle_dict = {}
+    
     today_dt = datetime.now()
     current_month_start = datetime(today_dt.year, today_dt.month, 1)
     prev_month_end = current_month_start - timedelta(days=1)
@@ -146,69 +139,83 @@ def fetch_multi_tf_candles(symbols):
     current_week_start = today_dt - timedelta(days=today_dt.weekday())  # Monday of current week
     current_week_start = datetime(current_week_start.year, current_week_start.month, current_week_start.day)
 
-    for sym in symbols:
-        ticker = f"{sym}.NS"
+    chunk_size = 400
+    for i in range(0, len(symbols), chunk_size):
+        chunk = symbols[i:i + chunk_size]
+        yf_symbols = [f"{s}.NS" for s in chunk]
+        
+        if len(symbols) > chunk_size:
+            print(f"  Downloading candle chunk {i//chunk_size + 1}/{(len(symbols)-1)//chunk_size + 1} ({len(chunk)} symbols)...")
+            
         try:
-            if ticker in data.columns.levels[0]:
-                df_sym = data[ticker].dropna(subset=["Close", "Open"]).copy()
-            elif len(symbols) == 1:
-                df_sym = data.dropna(subset=["Close", "Open"]).copy()
-            else:
-                continue
-
-            if df_sym.empty or len(df_sym) < 2:
-                continue
-
-            # Ensure sorted index
-            df_sym = df_sym.sort_index()
-
-            # 1D Candle (Daily) - Most recent completed bar
-            last_row = df_sym.iloc[-1]
-            close_1d = float(last_row["Close"])
-            open_1d  = float(last_row["Open"])
-            is_1d_green = close_1d > open_1d
-
-            # 1W Candle (Weekly) - Open of first trading day of current week vs Latest Close
-            df_week = df_sym[df_sym.index >= pd.Timestamp(current_week_start)]
-            if not df_week.empty:
-                open_1w  = float(df_week.iloc[0]["Open"])
-                close_1w = float(df_week.iloc[-1]["Close"])
-            else:
-                open_1w  = float(df_sym.iloc[-min(5, len(df_sym))]["Open"])
-                close_1w = float(df_sym.iloc[-1]["Close"])
-            is_1w_green = close_1w > open_1w
-
-            # 1M Candle (Current Monthly) - Open of first trading day of current month vs Latest Close
-            df_month = df_sym[df_sym.index >= pd.Timestamp(current_month_start)]
-            if not df_month.empty:
-                open_1m  = float(df_month.iloc[0]["Open"])
-                close_1m = float(df_month.iloc[-1]["Close"])
-            else:
-                open_1m  = float(df_sym.iloc[-min(20, len(df_sym))]["Open"])
-                close_1m = float(df_sym.iloc[-1]["Close"])
-            is_1m_green = close_1m > open_1m
-
-            # Prev 1M Candle (Previous Monthly) - Open vs Close of previous calendar month
-            df_prev_month = df_sym[(df_sym.index >= pd.Timestamp(prev_month_start)) & (df_sym.index <= pd.Timestamp(prev_month_end))]
-            if not df_prev_month.empty:
-                open_prev_1m  = float(df_prev_month.iloc[0]["Open"])
-                close_prev_1m = float(df_prev_month.iloc[-1]["Close"])
-                is_prev_1m_red = close_prev_1m < open_prev_1m
-            else:
-                is_prev_1m_red = False
-
-            candle_dict[sym] = {
-                "1D Candle": "GREEN" if is_1d_green else "RED",
-                "1W Candle": "GREEN" if is_1w_green else "RED",
-                "1M Candle": "GREEN" if is_1m_green else "RED",
-                "Prev 1M Candle": "RED" if is_prev_1m_red else "GREEN",
-                "1D %": round(((close_1d - open_1d) / open_1d) * 100, 2),
-                "1W %": round(((close_1w - open_1w) / open_1w) * 100, 2),
-                "1M %": round(((close_1m - open_1m) / open_1m) * 100, 2),
-                "Latest Price": round(close_1d, 2)
-            }
-        except Exception:
+            data = yf.download(yf_symbols, period="6mo", interval="1d", group_by="ticker", progress=False, threads=True)
+        except Exception as e:
+            print(f"⚠️ Error downloading chunk: {e}")
             continue
+
+        for sym in chunk:
+            ticker = f"{sym}.NS"
+            try:
+                if ticker in data.columns.levels[0]:
+                    df_sym = data[ticker].dropna(subset=["Close", "Open"]).copy()
+                elif len(chunk) == 1:
+                    df_sym = data.dropna(subset=["Close", "Open"]).copy()
+                else:
+                    continue
+
+                if df_sym.empty or len(df_sym) < 2:
+                    continue
+
+                # Ensure sorted index
+                df_sym = df_sym.sort_index()
+
+                # 1D Candle (Daily) - Most recent completed bar
+                last_row = df_sym.iloc[-1]
+                close_1d = float(last_row["Close"])
+                open_1d  = float(last_row["Open"])
+                is_1d_green = close_1d > open_1d
+
+                # 1W Candle (Weekly) - Open of first trading day of current week vs Latest Close
+                df_week = df_sym[df_sym.index >= pd.Timestamp(current_week_start)]
+                if not df_week.empty:
+                    open_1w  = float(df_week.iloc[0]["Open"])
+                    close_1w = float(df_week.iloc[-1]["Close"])
+                else:
+                    open_1w  = float(df_sym.iloc[-min(5, len(df_sym))]["Open"])
+                    close_1w = float(df_sym.iloc[-1]["Close"])
+                is_1w_green = close_1w > open_1w
+
+                # 1M Candle (Current Monthly) - Open of first trading day of current month vs Latest Close
+                df_month = df_sym[df_sym.index >= pd.Timestamp(current_month_start)]
+                if not df_month.empty:
+                    open_1m  = float(df_month.iloc[0]["Open"])
+                    close_1m = float(df_month.iloc[-1]["Close"])
+                else:
+                    open_1m  = float(df_sym.iloc[-min(20, len(df_sym))]["Open"])
+                    close_1m = float(df_sym.iloc[-1]["Close"])
+                is_1m_green = close_1m > open_1m
+
+                # Prev 1M Candle (Previous Monthly) - Open vs Close of previous calendar month
+                df_prev_month = df_sym[(df_sym.index >= pd.Timestamp(prev_month_start)) & (df_sym.index <= pd.Timestamp(prev_month_end))]
+                if not df_prev_month.empty:
+                    open_prev_1m  = float(df_prev_month.iloc[0]["Open"])
+                    close_prev_1m = float(df_prev_month.iloc[-1]["Close"])
+                    is_prev_1m_red = close_prev_1m < open_prev_1m
+                else:
+                    is_prev_1m_red = False
+
+                candle_dict[sym] = {
+                    "1D Candle": "GREEN" if is_1d_green else "RED",
+                    "1W Candle": "GREEN" if is_1w_green else "RED",
+                    "1M Candle": "GREEN" if is_1m_green else "RED",
+                    "Prev 1M Candle": "RED" if is_prev_1m_red else "GREEN",
+                    "1D %": round(((close_1d - open_1d) / open_1d) * 100, 2),
+                    "1W %": round(((close_1w - open_1w) / open_1w) * 100, 2),
+                    "1M %": round(((close_1m - open_1m) / open_1m) * 100, 2),
+                    "Latest Price": round(close_1d, 2)
+                }
+            except Exception:
+                continue
 
     print(f"✅ Processed multi-timeframe candles for {len(candle_dict)} stocks.\n")
     return candle_dict
