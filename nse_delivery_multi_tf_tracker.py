@@ -138,6 +138,7 @@ def fetch_multi_tf_candles(symbols):
     prev_month_start = datetime(prev_month_end.year, prev_month_end.month, 1)
     current_week_start = today_dt - timedelta(days=today_dt.weekday())  # Monday of current week
     current_week_start = datetime(current_week_start.year, current_week_start.month, current_week_start.day)
+    prev_week_start = current_week_start - timedelta(days=7)
 
     chunk_size = 400
     for i in range(0, len(symbols), chunk_size):
@@ -185,6 +186,15 @@ def fetch_multi_tf_candles(symbols):
                     close_1w = float(df_sym.iloc[-1]["Close"])
                 is_1w_green = close_1w > open_1w
 
+                # Prev 1W Candle (Previous Weekly) - Open vs Close of previous trading week
+                df_prev_week = df_sym[(df_sym.index >= pd.Timestamp(prev_week_start)) & (df_sym.index < pd.Timestamp(current_week_start))]
+                if not df_prev_week.empty:
+                    open_prev_1w  = float(df_prev_week.iloc[0]["Open"])
+                    close_prev_1w = float(df_prev_week.iloc[-1]["Close"])
+                    is_prev_1w_red = close_prev_1w < open_prev_1w
+                else:
+                    is_prev_1w_red = False
+
                 # 1M Candle (Current Monthly) - Open of first trading day of current month vs Latest Close
                 df_month = df_sym[df_sym.index >= pd.Timestamp(current_month_start)]
                 if not df_month.empty:
@@ -207,6 +217,7 @@ def fetch_multi_tf_candles(symbols):
                 candle_dict[sym] = {
                     "1D Candle": "GREEN" if is_1d_green else "RED",
                     "1W Candle": "GREEN" if is_1w_green else "RED",
+                    "Prev 1W Candle": "RED" if is_prev_1w_red else "GREEN",
                     "1M Candle": "GREEN" if is_1m_green else "RED",
                     "Prev 1M Candle": "RED" if is_prev_1m_red else "GREEN",
                     "1D %": round(((close_1d - open_1d) / open_1d) * 100, 2),
@@ -224,7 +235,7 @@ def fetch_multi_tf_candles(symbols):
 def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     """
     Compute volume-weighted delivery % and volume averages for a symbol,
-    and combine with 1D GREEN + 1W GREEN + 1M GREEN + Prev 1M RED candles.
+    and combine with 7 multi-timeframe strategy rules.
     """
     date_keys = sorted(daily_dfs.keys(), key=lambda x: datetime.strptime(x, "%d%m%Y"), reverse=True)
     if not date_keys:
@@ -270,40 +281,51 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     cond2 = (avg_vol_30 < avg_vol_5) and (avg_vol_5 < yest_vol)              # Vol Exp
     cond_vol_dec = (avg_vol_30 > avg_vol_5) and (avg_vol_5 > yest_vol)      # Vol Dec (30D Vol > 5D Vol > Yest Vol)
 
-    strict_accumulation = cond1 and cond2
-
     # Multi-Timeframe Candle Info
     c_info = candle_dict.get(symbol, {
-        "1D Candle": "N/A", "1W Candle": "N/A", "1M Candle": "N/A", "Prev 1M Candle": "N/A",
+        "1D Candle": "N/A", "1W Candle": "N/A", "Prev 1W Candle": "N/A", "1M Candle": "N/A", "Prev 1M Candle": "N/A",
         "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0
     })
 
     cand_1d = c_info["1D Candle"]
     cand_1w = c_info["1W Candle"]
+    cand_prev_1w = c_info.get("Prev 1W Candle", "N/A")
     cand_1m = c_info["1M Candle"]
     cand_prev_1m = c_info.get("Prev 1M Candle", "N/A")
 
-    # Match Rule: 1D GREEN AND 1W GREEN AND 1M GREEN AND Prev 1M RED
-    all_candles_match = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN") and (cand_prev_1m == "RED")
+    # Candle Pattern Rules:
+    pattern_prev_1m_red = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN") and (cand_prev_1m == "RED")
+    pattern_prev_1w_red = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_prev_1w == "RED") and (cand_1m == "GREEN")
+    pattern_3tf_green   = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN")
     
-    # User Defined 4 Strategy Rules:
-    # 1. Pure Vol Exp + Deliv Acc: Cond 2 (Vol Exp) AND Cond 1 (Deliv Inc) [No Candle Filter]
+    # 7 Strategy Rules:
+    # 1. Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1
     pure_vol_exp_deliv_acc = cond2 and cond1
 
-    # 2. Pure Deliv Acc + Vol Dec: Cond 1 (Deliv Inc) AND Vol Dec (30D > 5D > Yest) [No Candle Filter]
+    # 2. Pure Deliv Acc + Vol Dec: Cond 1 AND Vol Dec
     pure_deliv_acc_vol_dec = cond1 and cond_vol_dec
 
-    # 3. Multi-TF Super Signal: Cond 2 (Vol Exp) AND Cond 1 (Deliv Inc) AND 1D+1W+1M Green + Prev 1M Red
-    multi_tf_super_signal = cond2 and cond1 and all_candles_match
+    # 3. Multi-TF Super Signal: Cond 2 AND Cond 1 AND (1D GREEN + 1W GREEN + 1M GREEN + Prev 1M RED)
+    multi_tf_super_signal = cond2 and cond1 and pattern_prev_1m_red
 
-    # 4. Multi-TF Deliv Accumulation: Cond 1 (Deliv Inc) AND Vol Dec (30D > 5D > Yest) AND 1D+1W+1M Green + Prev 1M Red
-    multi_tf_deliv_accumulation = cond1 and cond_vol_dec and all_candles_match
+    # 4. Multi-TF Deliv Accumulation: Cond 1 AND Vol Dec AND (1D GREEN + 1W GREEN + 1M GREEN + Prev 1M RED)
+    multi_tf_deliv_accumulation = cond1 and cond_vol_dec and pattern_prev_1m_red
+
+    # 5. Pure Candle Pattern (1D+1W+1M Green + Prev 1M Red)
+    candle_pattern_prev_1m_red = pattern_prev_1m_red
+
+    # 6. Candle Pattern (1D+1W+1M Green + Prev 1W Red)
+    candle_pattern_prev_1w_red = pattern_prev_1w_red
+
+    # 7. Pure 3-TF Green (1D+1W+1M Green)
+    candle_pattern_3tf_green = pattern_3tf_green
 
     return {
         "Symbol": symbol,
         "Price (₹)": c_info["Latest Price"],
         "1D Candle": cand_1d,
         "1W Candle": cand_1w,
+        "Prev 1W Candle": cand_prev_1w,
         "1M Candle": cand_1m,
         "Prev 1M Candle": cand_prev_1m,
         "1D %": c_info["1D %"],
@@ -318,11 +340,13 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Cond 1 (Deliv Inc)": cond1,
         "Cond 2 (Vol Exp)": cond2,
         "Vol Dec (30D>5D>Yest)": cond_vol_dec,
-        "All Candles Match": "YES" if all_candles_match else "NO",
         "Pure Vol Exp + Deliv Acc": "YES" if pure_vol_exp_deliv_acc else "NO",
         "Pure Deliv Acc + Vol Dec": "YES" if pure_deliv_acc_vol_dec else "NO",
         "Multi-TF Super Signal": "YES" if multi_tf_super_signal else "NO",
-        "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO"
+        "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO",
+        "1D+1W+1M Green Prev 1M Red": "YES" if candle_pattern_prev_1m_red else "NO",
+        "1D+1W+1M Green Prev 1W Red": "YES" if candle_pattern_prev_1w_red else "NO",
+        "1D+1W+1M Green": "YES" if candle_pattern_3tf_green else "NO"
     }
 
 
