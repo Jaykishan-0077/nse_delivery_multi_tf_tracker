@@ -281,13 +281,17 @@ def run_daily_notification():
     
     # Dispatch all 7 files via Telegram Bot
     print("\n📤 Sending 7 files via Telegram Bot...")
-    send_telegram_file(file_1, f"1️⃣ File 1: Pure Vol Exp + Deliv Acc [Nifty 500] ({len(f1_df)} stocks) — {date_str}")
-    send_telegram_file(file_2, f"2️⃣ File 2: Pure Deliv Acc + Vol Dec [Nifty 500] ({len(f2_df)} stocks) — {date_str}")
-    send_telegram_file(file_3, f"3️⃣ File 3: Multi-TF Super Signal [Nifty 500] ({len(f3_df)} stocks) — {date_str}")
-    send_telegram_file(file_4, f"4️⃣ File 4: Multi-TF Deliv Accumulation [Nifty 500] ({len(f4_df)} stocks) — {date_str}")
-    send_telegram_file(file_5, f"5️⃣ File 5: 1D+1W+1M Green + Prev 1M Red [ALL NSE] ({len(f5_df)} stocks) — {date_str}")
-    send_telegram_file(file_6, f"6️⃣ File 6: 1D+1W+1M Green + Prev 1W Red [ALL NSE] ({len(f6_df)} stocks) — {date_str}")
-    send_telegram_file(file_7, f"7️⃣ File 7: 1D+1W+1M Green [ALL NSE] ({len(f7_df)} stocks) — {date_str}")
+    for file_path, caption in [
+        (file_1, f"1️⃣ File 1: Pure Vol Exp + Deliv Acc [Nifty 500] ({len(f1_df)} stocks) — {date_str}"),
+        (file_2, f"2️⃣ File 2: Pure Deliv Acc + Vol Dec [Nifty 500] ({len(f2_df)} stocks) — {date_str}"),
+        (file_3, f"3️⃣ File 3: Multi-TF Super Signal [Nifty 500] ({len(f3_df)} stocks) — {date_str}"),
+        (file_4, f"4️⃣ File 4: Multi-TF Deliv Accumulation [Nifty 500] ({len(f4_df)} stocks) — {date_str}"),
+        (file_5, f"5️⃣ File 5: 1D+1W+1M Green + Prev 1M Red [ALL NSE] ({len(f5_df)} stocks) — {date_str}"),
+        (file_6, f"6️⃣ File 6: 1D+1W+1M Green + Prev 1W Red [ALL NSE] ({len(f6_df)} stocks) — {date_str}"),
+        (file_7, f"7️⃣ File 7: 1D+1W+1M Green [ALL NSE] ({len(f7_df)} stocks) — {date_str}"),
+    ]:
+        send_telegram_file(file_path, caption)
+        import time; time.sleep(1.5)
     
     # Dispatch primary Super Signal file via Meta Official WhatsApp Cloud API
     media_id = upload_media_meta(file_3)
