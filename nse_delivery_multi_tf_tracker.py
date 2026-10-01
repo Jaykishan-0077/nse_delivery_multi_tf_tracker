@@ -297,8 +297,9 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_prev_1m_red = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN") and (cand_prev_1m == "RED")
     pattern_prev_1w_red = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_prev_1w == "RED") and (cand_1m == "GREEN")
     pattern_3tf_green   = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN")
+    pattern_5cond       = (cand_1d == "RED") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
     
-    # 7 Strategy Rules:
+    # Strategy Rules:
     # 1. Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1
     pure_vol_exp_deliv_acc = cond2 and cond1
 
@@ -319,6 +320,9 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
 
     # 7. Pure 3-TF Green (1D+1W+1M Green)
     candle_pattern_3tf_green = pattern_3tf_green
+
+    # 8. 5-Cond Candle Pattern (1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green)
+    candle_pattern_5cond = pattern_5cond
 
     return {
         "Symbol": symbol,
@@ -346,7 +350,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO",
         "1D+1W+1M Green Prev 1M Red": "YES" if candle_pattern_prev_1m_red else "NO",
         "1D+1W+1M Green Prev 1W Red": "YES" if candle_pattern_prev_1w_red else "NO",
-        "1D+1W+1M Green": "YES" if candle_pattern_3tf_green else "NO"
+        "1D+1W+1M Green": "YES" if candle_pattern_3tf_green else "NO",
+        "1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_5cond else "NO"
     }
 
 
