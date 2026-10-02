@@ -18,6 +18,7 @@ from datetime import datetime
 from nse_delivery_multi_tf_tracker import (
     get_nifty500_symbols,
     fetch_all_mto,
+    fetch_official_nse_bhavdata,
     fetch_multi_tf_candles,
     compute_multi_tf_stats
 )
@@ -199,8 +200,11 @@ def run_daily_notification():
     print(f"ℹ️ Loaded {len(all_nse_symbols)} active symbols from NSE MTO delivery database.")
     print(f"ℹ️ Loaded {len(nifty500_symbols)} official Nifty 500 stock symbols.")
 
-    # Fetch candle data for ALL NSE symbols
-    candle_dict = fetch_multi_tf_candles(all_nse_symbols)
+    # Fetch official NSE Bhavcopy prices for the latest trading day to ensure zero price lag
+    latest_bhav_dict = fetch_official_nse_bhavdata(latest_key)
+
+    # Fetch candle data for ALL NSE symbols patched with official NSE prices
+    candle_dict = fetch_multi_tf_candles(all_nse_symbols, latest_bhav_dict=latest_bhav_dict)
 
     results = []
     for sym in all_nse_symbols:

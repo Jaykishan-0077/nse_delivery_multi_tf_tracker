@@ -123,11 +123,46 @@ def fetch_all_mto(target_days=30):
     return daily_dfs
 
 
-def fetch_multi_tf_candles(symbols):
+def fetch_official_nse_bhavdata(date_str):
+    """
+    Fetch official NSE security bhavdata CSV for a specific date (DDMMYYYY format)
+    to get exact, real-time official Open, High, Low, Close prices.
+    """
+    url = f"https://archives.nseindia.com/products/content/sec_bhavdata_full_{date_str}.csv"
+    try:
+        resp = requests.get(url, headers=NSE_HEADERS, timeout=15)
+        if resp.status_code == 200:
+            df = pd.read_csv(io.StringIO(resp.text))
+            df.columns = [c.strip() for c in df.columns]
+            bhav_dict = {}
+            dt_obj = datetime.strptime(date_str, "%d%m%Y")
+            for idx, row in df.iterrows():
+                sym = str(row.get("SYMBOL", "")).strip()
+                series = str(row.get("SERIES", "")).strip()
+                if series in ["EQ", "BE"]:
+                    try:
+                        bhav_dict[sym] = {
+                            "Open": float(row["OPEN_PRICE"]),
+                            "High": float(row["HIGH_PRICE"]),
+                            "Low": float(row["LOW_PRICE"]),
+                            "Close": float(row["CLOSE_PRICE"]),
+                            "Date": dt_obj
+                        }
+                    except (ValueError, KeyError):
+                        continue
+            if bhav_dict:
+                print(f"  📄 Loaded official NSE Bhavcopy prices for {len(bhav_dict):,} stocks on {dt_obj.strftime('%d-%b-%Y')}.")
+                return bhav_dict
+    except Exception:
+        pass
+    return {}
+
+
+def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
     """
     Download daily OHLC price history for stock symbols via yfinance
     and calculate 1D, 1W, and 1M candle positivity (GREEN vs RED).
-    Supports large symbol lists by auto-chunking (400 per chunk).
+    Patches yfinance data with official NSE Bhavdata to ensure zero price lagging.
     """
     print(f"📈 Fetching multi-timeframe candle data for {len(symbols)} stocks via yfinance...")
     candle_dict = {}
@@ -164,7 +199,29 @@ def fetch_multi_tf_candles(symbols):
                 else:
                     continue
 
-                if df_sym.empty or len(df_sym) < 2:
+                if df_sym.empty:
+                    continue
+
+                # Patch/sync latest row with official NSE Bhavdata if available to prevent 1-day yfinance lag
+                if latest_bhav_dict and sym in latest_bhav_dict:
+                    b_info = latest_bhav_dict[sym]
+                    latest_dt = pd.Timestamp(b_info["Date"])
+                    if df_sym.empty or df_sym.index[-1] < latest_dt:
+                        new_row = pd.DataFrame([{
+                            "Open": b_info["Open"],
+                            "High": b_info["High"],
+                            "Low": b_info["Low"],
+                            "Close": b_info["Close"],
+                            "Volume": 0
+                        }], index=[latest_dt])
+                        df_sym = pd.concat([df_sym, new_row])
+                    elif df_sym.index[-1] == latest_dt:
+                        df_sym.loc[latest_dt, "Close"] = b_info["Close"]
+                        df_sym.loc[latest_dt, "Open"]  = b_info["Open"]
+                        df_sym.loc[latest_dt, "High"]  = b_info["High"]
+                        df_sym.loc[latest_dt, "Low"]   = b_info["Low"]
+
+                if len(df_sym) < 2:
                     continue
 
                 # Ensure sorted index
@@ -367,8 +424,11 @@ def run_screener(target_trading_days=30):
         print("❌ No MTO delivery data found.")
         return None
 
-    # Load candle data for Nifty 500 symbols
-    candle_dict = fetch_multi_tf_candles(symbols)
+    latest_key = sorted(daily_dfs.keys(), key=lambda x: datetime.strptime(x, "%d%m%Y"), reverse=True)[0]
+    latest_bhav_dict = fetch_official_nse_bhavdata(latest_key)
+
+    # Load candle data for Nifty 500 symbols patched with official NSE Bhavdata
+    candle_dict = fetch_multi_tf_candles(symbols, latest_bhav_dict=latest_bhav_dict)
 
     results = []
     print("🔍 Screening stocks for Multi-Timeframe Super Accumulation...")
