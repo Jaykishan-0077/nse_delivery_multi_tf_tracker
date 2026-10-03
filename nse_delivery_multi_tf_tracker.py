@@ -268,15 +268,32 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                     open_prev_1m  = float(df_prev_month.iloc[0]["Open"])
                     close_prev_1m = float(df_prev_month.iloc[-1]["Close"])
                     is_prev_1m_red = close_prev_1m < open_prev_1m
+                    is_prev_1m_green = close_prev_1m > open_prev_1m
+                    vol_prev_1m   = float(df_prev_month["Volume"].sum())
                 else:
                     is_prev_1m_red = False
+                    is_prev_1m_green = False
+                    vol_prev_1m = 0.0
+
+                # Past completed months average volume calculation
+                df_past_months = df_sym[df_sym.index < pd.Timestamp(current_month_start)]
+                if not df_past_months.empty:
+                    monthly_vols = df_past_months.groupby(pd.Grouper(freq="ME"))["Volume"].sum()
+                    avg_monthly_vol = float(monthly_vols.mean()) if len(monthly_vols) > 0 else 0.0
+                else:
+                    avg_monthly_vol = 0.0
+
+                is_prev_1m_vol_less = (vol_prev_1m > 0) and (avg_monthly_vol > 0) and (vol_prev_1m < avg_monthly_vol)
 
                 candle_dict[sym] = {
                     "1D Candle": "GREEN" if is_1d_green else "RED",
                     "1W Candle": "GREEN" if is_1w_green else "RED",
                     "Prev 1W Candle": "RED" if is_prev_1w_red else "GREEN",
                     "1M Candle": "GREEN" if is_1m_green else "RED",
-                    "Prev 1M Candle": "RED" if is_prev_1m_red else "GREEN",
+                    "Prev 1M Candle": "GREEN" if is_prev_1m_green else ("RED" if is_prev_1m_red else "N/A"),
+                    "Prev 1M Vol Less": is_prev_1m_vol_less,
+                    "Prev 1M Vol": int(vol_prev_1m),
+                    "Avg Monthly Vol": int(avg_monthly_vol),
                     "1D %": round(((close_1d - open_1d) / open_1d) * 100, 2),
                     "1W %": round(((close_1w - open_1w) / open_1w) * 100, 2),
                     "1M %": round(((close_1m - open_1m) / open_1m) * 100, 2),
@@ -292,7 +309,7 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
 def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     """
     Compute volume-weighted delivery % and volume averages for a symbol,
-    and combine with 7 multi-timeframe strategy rules.
+    and combine with multi-timeframe strategy rules.
     """
     date_keys = sorted(daily_dfs.keys(), key=lambda x: datetime.strptime(x, "%d%m%Y"), reverse=True)
     if not date_keys:
@@ -341,6 +358,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # Multi-Timeframe Candle Info
     c_info = candle_dict.get(symbol, {
         "1D Candle": "N/A", "1W Candle": "N/A", "Prev 1W Candle": "N/A", "1M Candle": "N/A", "Prev 1M Candle": "N/A",
+        "Prev 1M Vol Less": False, "Prev 1M Vol": 0, "Avg Monthly Vol": 0,
         "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0
     })
 
@@ -355,6 +373,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_prev_1w_red = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_prev_1w == "RED") and (cand_1m == "GREEN")
     pattern_3tf_green   = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN")
     pattern_5cond       = (cand_1d == "RED") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
+    pattern_strat9      = (cand_1m == "GREEN") and (cand_prev_1m == "GREEN") and c_info.get("Prev 1M Vol Less", False)
     
     # Strategy Rules:
     # 1. Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1
@@ -381,6 +400,9 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # 8. 5-Cond Candle Pattern (1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green)
     candle_pattern_5cond = pattern_5cond
 
+    # 9. 1M Green + Prev 1M Green + Prev 1M Vol Contraction
+    candle_pattern_strat9 = pattern_strat9
+
     return {
         "Symbol": symbol,
         "Price (₹)": c_info["Latest Price"],
@@ -398,6 +420,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Yest Volume": int(yest_vol),
         "5D Avg Vol": int(avg_vol_5),
         "30D Avg Vol": int(avg_vol_30),
+        "Prev 1M Vol": c_info.get("Prev 1M Vol", 0),
+        "Avg Monthly Vol": c_info.get("Avg Monthly Vol", 0),
         "Cond 1 (Deliv Inc)": cond1,
         "Cond 2 (Vol Exp)": cond2,
         "Vol Dec (30D>5D>Yest)": cond_vol_dec,
@@ -408,7 +432,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D+1W+1M Green Prev 1M Red": "YES" if candle_pattern_prev_1m_red else "NO",
         "1D+1W+1M Green Prev 1W Red": "YES" if candle_pattern_prev_1w_red else "NO",
         "1D+1W+1M Green": "YES" if candle_pattern_3tf_green else "NO",
-        "1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_5cond else "NO"
+        "1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_5cond else "NO",
+        "1M Green Prev 1M Green Vol Contraction": "YES" if candle_pattern_strat9 else "NO"
     }
 
 

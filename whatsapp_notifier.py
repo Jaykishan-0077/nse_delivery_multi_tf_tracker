@@ -38,22 +38,24 @@ TELEGRAM_CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "1948266239")
 # TELEGRAM BOT API
 # ──────────────────────────────────────────────────────────────
 def send_telegram_file(file_path: str, caption: str = "") -> bool:
-    """Send Excel workbook directly to user via Telegram Bot API."""
+    """Send Excel workbook directly to user via Telegram Bot API with retries."""
     token = os.environ.get("TELEGRAM_BOT_TOKEN", TELEGRAM_BOT_TOKEN)
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", TELEGRAM_CHAT_ID)
     if not token or not chat_id:
         return False
     url = f"https://api.telegram.org/bot{token}/sendDocument"
-    try:
-        with open(file_path, "rb") as f:
-            resp = requests.post(url, data={"chat_id": chat_id, "caption": caption}, files={"document": f}, timeout=30)
-            if resp.status_code == 200:
-                print(f"✅ Sent Excel report via Telegram Bot! ({os.path.basename(file_path)})")
-                return True
-            else:
-                print(f"⚠️ Telegram API status {resp.status_code}: {resp.text}")
-    except Exception as e:
-        print(f"❌ Error sending Telegram document: {e}")
+    for attempt in range(1, 4):
+        try:
+            with open(file_path, "rb") as f:
+                resp = requests.post(url, data={"chat_id": chat_id, "caption": caption}, files={"document": f}, timeout=60)
+                if resp.status_code == 200:
+                    print(f"✅ Sent Excel report via Telegram Bot! ({os.path.basename(file_path)})")
+                    return True
+                else:
+                    print(f"⚠️ Telegram API status {resp.status_code} (attempt {attempt}/3): {resp.text}")
+        except Exception as e:
+            print(f"⚠️ Telegram send attempt {attempt}/3 error: {e}")
+        import time; time.sleep(2)
     return False
 
 
@@ -148,8 +150,9 @@ def build_whatsapp_report(df_all, df_n500):
     f6_df = df_all[df_all["1D+1W+1M Green Prev 1W Red"] == "YES"]
     f7_df = df_all[df_all["1D+1W+1M Green"] == "YES"]
     f8_df = df_all[df_all["1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
+    f9_df = df_all[df_all["1M Green Prev 1M Green Vol Contraction"] == "YES"]
     
-    msg = f"🌟 *NSE DAILY 8-STRATEGY SCANNER REPORT* ({date_str})\n"
+    msg = f"🌟 *NSE DAILY 9-STRATEGY SCANNER REPORT* ({date_str})\n"
     msg += f"─────────────────────────────────────────────\n"
     msg += f"🔍 Total Stocks Analyzed: {len(df_all)} (Nifty 500: {len(df_n500)})\n"
     msg += f"1️⃣ *Pure Vol Exp + Deliv Acc (Nifty 500)*: {len(f1_df)} stocks\n"
@@ -159,7 +162,8 @@ def build_whatsapp_report(df_all, df_n500):
     msg += f"5️⃣ *1D+1W+1M Green + Prev 1M Red (ALL NSE)*: {len(f5_df)} stocks\n"
     msg += f"6️⃣ *1D+1W+1M Green + Prev 1W Red (ALL NSE)*: {len(f6_df)} stocks\n"
     msg += f"7️⃣ *1D+1W+1M Green (ALL NSE)*: {len(f7_df)} stocks\n"
-    msg += f"8️⃣ *1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f8_df)} stocks\n\n"
+    msg += f"8️⃣ *1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f8_df)} stocks\n"
+    msg += f"9️⃣ *1M Green + Prev 1M Green + Vol Contraction (ALL NSE)*: {len(f9_df)} stocks\n\n"
     
     if not f3_df.empty:
         msg += f"🏆 *TOP MULTI-TF SUPER SIGNALS (File 3)*:\n"
@@ -172,7 +176,7 @@ def build_whatsapp_report(df_all, df_n500):
             msg += f"• *{row['Symbol']}* (₹{row['Price (₹)']}): 🟢 1D ({row['1D %']}%) 1W ({row['1W %']}%) 1M ({row['1M %']}%) | 🔴 Prev 1M\n"
         msg += "\n"
             
-    msg += f"📁 8 separate strategy Excel files attached below."
+    msg += f"📁 9 separate strategy Excel files attached below."
     return msg
 
 
@@ -220,18 +224,19 @@ def run_daily_notification():
     date_str = datetime.now().strftime("%d-%b-%Y")
     out_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # Filter DataFrames for each of the 8 strategies:
+    # Filter DataFrames for each of the 9 strategies:
     # Files 1, 2, 3, 4: Restricted to NIFTY 500 STOCKS
     f1_df = df_n500[df_n500["Pure Vol Exp + Deliv Acc"] == "YES"]
     f2_df = df_n500[df_n500["Pure Deliv Acc + Vol Dec"] == "YES"]
     f3_df = df_n500[df_n500["Multi-TF Super Signal"] == "YES"]
     f4_df = df_n500[df_n500["Multi-TF Deliv Accumulation"] == "YES"]
 
-    # Files 5, 6, 7, 8: Scans ALL ~2,670 NSE STOCKS
+    # Files 5, 6, 7, 8, 9: Scans ALL ~2,670 NSE STOCKS
     f5_df = df_all[df_all["1D+1W+1M Green Prev 1M Red"] == "YES"]
     f6_df = df_all[df_all["1D+1W+1M Green Prev 1W Red"] == "YES"]
     f7_df = df_all[df_all["1D+1W+1M Green"] == "YES"]
     f8_df = df_all[df_all["1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
+    f9_df = df_all[df_all["1M Green Prev 1M Green Vol Contraction"] == "YES"]
 
     # File 1: Pure Vol Expansion + Deliv Accumulation (Nifty 500)
     file_1 = os.path.join(out_dir, f"pure_vol_exp_deliv_acc_nifty500_{timestamp_str}.xlsx")
@@ -281,7 +286,13 @@ def run_daily_notification():
         f8_df.to_excel(writer, sheet_name="5-Cond Candle Pattern", index=False)
         df_all.to_excel(writer, sheet_name="ALL NSE Stocks Signals", index=False)
 
-    print(f"💾 Saved 8 Strategy Files:")
+    # File 9: 1M Green + Prev 1M Green + Vol Contraction (ALL NSE STOCKS)
+    file_9 = os.path.join(out_dir, f"candle_pattern_1m_green_prev_1m_green_vol_contraction_ALL_NSE_{timestamp_str}.xlsx")
+    with pd.ExcelWriter(file_9, engine="openpyxl") as writer:
+        f9_df.to_excel(writer, sheet_name="1M Green Prev 1M Green Vol Cont", index=False)
+        df_all.to_excel(writer, sheet_name="ALL NSE Stocks Signals", index=False)
+
+    print(f"💾 Saved 9 Strategy Files:")
     print(f"   1. {file_1} ({len(f1_df)} stocks)")
     print(f"   2. {file_2} ({len(f2_df)} stocks)")
     print(f"   3. {file_3} ({len(f3_df)} stocks)")
@@ -290,11 +301,12 @@ def run_daily_notification():
     print(f"   6. {file_6} ({len(f6_df)} stocks)")
     print(f"   7. {file_7} ({len(f7_df)} stocks)")
     print(f"   8. {file_8} ({len(f8_df)} stocks)")
+    print(f"   9. {file_9} ({len(f9_df)} stocks)")
     
     report_text = build_whatsapp_report(df_all, df_n500)
     
-    # Dispatch all 8 files via Telegram Bot
-    print("\n📤 Sending 8 files via Telegram Bot...")
+    # Dispatch all 9 files via Telegram Bot
+    print("\n📤 Sending 9 files via Telegram Bot...")
     for file_path, caption in [
         (file_1, f"1️⃣ File 1: Pure Vol Exp + Deliv Acc [Nifty 500] ({len(f1_df)} stocks) — {date_str}"),
         (file_2, f"2️⃣ File 2: Pure Deliv Acc + Vol Dec [Nifty 500] ({len(f2_df)} stocks) — {date_str}"),
@@ -304,6 +316,7 @@ def run_daily_notification():
         (file_6, f"6️⃣ File 6: 1D+1W+1M Green + Prev 1W Red [ALL NSE] ({len(f6_df)} stocks) — {date_str}"),
         (file_7, f"7️⃣ File 7: 1D+1W+1M Green [ALL NSE] ({len(f7_df)} stocks) — {date_str}"),
         (file_8, f"8️⃣ File 8: 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green [ALL NSE] ({len(f8_df)} stocks) — {date_str}"),
+        (file_9, f"9️⃣ File 9: 1M Green + Prev 1M Green + Vol Contraction [ALL NSE] ({len(f9_df)} stocks) — {date_str}"),
     ]:
         send_telegram_file(file_path, caption)
         import time; time.sleep(1.5)
@@ -313,7 +326,7 @@ def run_daily_notification():
     if media_id:
         send_whatsapp_template_meta(media_id, file_3, report_text)
 
-    print("\n🎉 Multi-Timeframe 7-file notification pipeline finished successfully!\n")
+    print("\n🎉 Multi-Timeframe 9-file notification pipeline finished successfully!\n")
 
 
 if __name__ == "__main__":
