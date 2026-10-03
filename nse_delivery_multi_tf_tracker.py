@@ -202,6 +202,10 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                 if df_sym.empty:
                     continue
 
+                # Filter out synthetic 0-volume holiday rows inserted by yfinance (e.g. market holidays)
+                if "Volume" in df_sym.columns:
+                    df_sym = df_sym[~((df_sym["Volume"] == 0) & (df_sym["Open"] == df_sym["Close"]))]
+
                 # Patch/sync latest row with official NSE Bhavdata if available to prevent 1-day yfinance lag
                 if latest_bhav_dict and sym in latest_bhav_dict:
                     b_info = latest_bhav_dict[sym]
