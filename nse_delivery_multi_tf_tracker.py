@@ -237,6 +237,17 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                 open_1d  = float(last_row["Open"])
                 is_1d_green = close_1d > open_1d
 
+                # Prev 1D Candle (Previous Daily Bar)
+                if len(df_sym) >= 2:
+                    prev_1d_row = df_sym.iloc[-2]
+                    close_prev_1d = float(prev_1d_row["Close"])
+                    open_prev_1d  = float(prev_1d_row["Open"])
+                    is_prev_1d_red = close_prev_1d < open_prev_1d
+                    is_prev_1d_green = close_prev_1d > open_prev_1d
+                else:
+                    is_prev_1d_red = False
+                    is_prev_1d_green = False
+
                 # 1W Candle (Weekly) - Open of first trading day of current week vs Latest Close
                 df_week = df_sym[df_sym.index >= pd.Timestamp(current_week_start)]
                 if not df_week.empty:
@@ -291,6 +302,7 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
 
                 candle_dict[sym] = {
                     "1D Candle": "GREEN" if is_1d_green else "RED",
+                    "Prev 1D Candle": "RED" if is_prev_1d_red else ("GREEN" if is_prev_1d_green else "N/A"),
                     "1W Candle": "GREEN" if is_1w_green else "RED",
                     "Prev 1W Candle": "RED" if is_prev_1w_red else "GREEN",
                     "1M Candle": "GREEN" if is_1m_green else "RED",
@@ -361,12 +373,13 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
 
     # Multi-Timeframe Candle Info
     c_info = candle_dict.get(symbol, {
-        "1D Candle": "N/A", "1W Candle": "N/A", "Prev 1W Candle": "N/A", "1M Candle": "N/A", "Prev 1M Candle": "N/A",
+        "1D Candle": "N/A", "Prev 1D Candle": "N/A", "1W Candle": "N/A", "Prev 1W Candle": "N/A", "1M Candle": "N/A", "Prev 1M Candle": "N/A",
         "Prev 1M Vol Less": False, "Prev 1M Vol": 0, "Avg Monthly Vol": 0,
         "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0
     })
 
     cand_1d = c_info["1D Candle"]
+    cand_prev_1d = c_info.get("Prev 1D Candle", "N/A")
     cand_1w = c_info["1W Candle"]
     cand_prev_1w = c_info.get("Prev 1W Candle", "N/A")
     cand_1m = c_info["1M Candle"]
@@ -378,6 +391,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_3tf_green   = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN")
     pattern_5cond       = (cand_1d == "RED") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
     pattern_strat9      = (cand_1m == "GREEN") and (cand_prev_1m == "GREEN") and c_info.get("Prev 1M Vol Less", False)
+    pattern_strat10     = (cand_prev_1d == "RED") and (cand_1d == "GREEN") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
     
     # Strategy Rules:
     # 1. Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1
@@ -407,10 +421,14 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # 9. 1M Green + Prev 1M Green + Prev 1M Vol Contraction
     candle_pattern_strat9 = pattern_strat9
 
+    # 10. Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green
+    candle_pattern_strat10 = pattern_strat10
+
     return {
         "Symbol": symbol,
         "Price (₹)": c_info["Latest Price"],
         "1D Candle": cand_1d,
+        "Prev 1D Candle": cand_prev_1d,
         "1W Candle": cand_1w,
         "Prev 1W Candle": cand_prev_1w,
         "1M Candle": cand_1m,
@@ -437,7 +455,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D+1W+1M Green Prev 1W Red": "YES" if candle_pattern_prev_1w_red else "NO",
         "1D+1W+1M Green": "YES" if candle_pattern_3tf_green else "NO",
         "1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_5cond else "NO",
-        "1M Green Prev 1M Green Vol Contraction": "YES" if candle_pattern_strat9 else "NO"
+        "1M Green Prev 1M Green Vol Contraction": "YES" if candle_pattern_strat9 else "NO",
+        "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10 else "NO"
     }
 
 
