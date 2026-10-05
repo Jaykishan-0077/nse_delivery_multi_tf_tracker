@@ -390,7 +390,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_prev_1w_red = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_prev_1w == "RED") and (cand_1m == "GREEN")
     pattern_3tf_green   = (cand_1d == "GREEN") and (cand_1w == "GREEN") and (cand_1m == "GREEN")
     pattern_5cond       = (cand_1d == "RED") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
-    pattern_strat9      = (cand_1m == "GREEN") and (cand_prev_1m == "GREEN") and c_info.get("Prev 1M Vol Less", False)
+    pattern_strat9      = (cand_1m == "GREEN") and (cand_prev_1m == "GREEN") and c_info.get("Prev 1M Vol Less", False) and (cand_prev_1d == "RED") and (cand_1d == "GREEN")
     pattern_strat10     = (cand_prev_1d == "RED") and (cand_1d == "GREEN") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
     
     # Strategy Rules:

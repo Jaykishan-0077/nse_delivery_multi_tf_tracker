@@ -164,7 +164,7 @@ def build_whatsapp_report(df_all, df_n500):
     msg += f"6️⃣ *1D+1W+1M Green + Prev 1W Red (ALL NSE)*: {len(f6_df)} stocks\n"
     msg += f"7️⃣ *1D+1W+1M Green (ALL NSE)*: {len(f7_df)} stocks\n"
     msg += f"8️⃣ *1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f8_df)} stocks\n"
-    msg += f"9️⃣ *1M Green + Prev 1M Green + Vol Contraction (ALL NSE)*: {len(f9_df)} stocks\n"
+    msg += f"9️⃣ *Prev 1D Red + 1D Green + 1M Green + Prev 1M Green + Vol Contraction (ALL NSE)*: {len(f9_df)} stocks\n"
     msg += f"🔟 *Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f10_df)} stocks\n\n"
     
     if not f3_df.empty:
@@ -326,7 +326,7 @@ def run_daily_notification():
         (file_6, f"6️⃣ File 6: 1D+1W+1M Green + Prev 1W Red [ALL NSE] ({len(f6_df)} stocks) — {date_str}"),
         (file_7, f"7️⃣ File 7: 1D+1W+1M Green [ALL NSE] ({len(f7_df)} stocks) — {date_str}"),
         (file_8, f"8️⃣ File 8: 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green [ALL NSE] ({len(f8_df)} stocks) — {date_str}"),
-        (file_9, f"9️⃣ File 9: 1M Green + Prev 1M Green + Vol Contraction [ALL NSE] ({len(f9_df)} stocks) — {date_str}"),
+        (file_9, f"9️⃣ File 9: Prev 1D Red + 1D Green + 1M Green + Prev 1M Green + Vol Contraction [ALL NSE] ({len(f9_df)} stocks) — {date_str}"),
         (file_10, f"🔟 File 10: Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green [ALL NSE] ({len(f10_df)} stocks) — {date_str}"),
     ]:
         send_telegram_file(file_path, caption)
