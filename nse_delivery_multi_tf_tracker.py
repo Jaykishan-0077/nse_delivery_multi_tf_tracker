@@ -184,7 +184,7 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
             print(f"  Downloading candle chunk {i//chunk_size + 1}/{(len(symbols)-1)//chunk_size + 1} ({len(chunk)} symbols)...")
             
         try:
-            data = yf.download(yf_symbols, period="6mo", interval="1d", group_by="ticker", progress=False, threads=True)
+            data = yf.download(yf_symbols, period="max", interval="1d", group_by="ticker", progress=False, threads=True)
         except Exception as e:
             print(f"⚠️ Error downloading chunk: {e}")
             continue
