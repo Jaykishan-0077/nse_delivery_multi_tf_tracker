@@ -397,6 +397,9 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # 1. Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1
     pure_vol_exp_deliv_acc = cond2 and cond1
 
+    # 1.7 Pure Vol Exp + Deliv Acc + 3-TF Green (ALL NSE STOCKS)
+    pure_vol_exp_deliv_acc_3tf_green = pattern_3tf_green and cond1 and cond2
+
     # 2. Pure Deliv Acc + Vol Dec: Cond 1 AND Vol Dec
     pure_deliv_acc_vol_dec = cond1 and cond_vol_dec
 
@@ -448,6 +451,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Cond 2 (Vol Exp)": cond2,
         "Vol Dec (30D>5D>Yest)": cond_vol_dec,
         "Pure Vol Exp + Deliv Acc": "YES" if pure_vol_exp_deliv_acc else "NO",
+        "Pure Vol Exp Deliv Acc 3TF Green": "YES" if pure_vol_exp_deliv_acc_3tf_green else "NO",
         "Pure Deliv Acc + Vol Dec": "YES" if pure_deliv_acc_vol_dec else "NO",
         "Multi-TF Super Signal": "YES" if multi_tf_super_signal else "NO",
         "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO",
