@@ -430,6 +430,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # 10. Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green
     candle_pattern_strat10 = pattern_strat10
 
+    # 11. Prev 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green
+    pattern_strat11 = (cand_prev_1d == "RED") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
+    candle_pattern_strat11 = pattern_strat11
+
     return {
         "Symbol": symbol,
         "Price (₹)": c_info["Latest Price"],
@@ -464,7 +468,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D+1W+1M Green": "YES" if candle_pattern_3tf_green else "NO",
         "1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_5cond else "NO",
         "1M Green Prev 1M Green Vol Contraction": "YES" if candle_pattern_strat9 else "NO",
-        "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10 else "NO"
+        "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10 else "NO",
+        "Prev 1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat11 else "NO"
     }
 
 

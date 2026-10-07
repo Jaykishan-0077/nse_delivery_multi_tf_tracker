@@ -154,8 +154,9 @@ def build_whatsapp_report(df_all, df_n500):
     f8_df = df_all[df_all["1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
     f9_df = df_all[df_all["1M Green Prev 1M Green Vol Contraction"] == "YES"]
     f10_df = df_all[df_all["Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
+    f11_df = df_all[df_all["Prev 1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
     
-    msg = f"🌟 *NSE DAILY 12-STRATEGY SCANNER REPORT* ({date_str})\n"
+    msg = f"🌟 *NSE DAILY 13-STRATEGY SCANNER REPORT* ({date_str})\n"
     msg += f"─────────────────────────────────────────────\n"
     msg += f"🔍 Total Stocks Analyzed: {len(df_all)} (Nifty 500: {len(df_n500)})\n"
     msg += f"1️⃣ *Pure Vol Exp + Deliv Acc (Nifty 500)*: {len(f1_df)} stocks\n"
@@ -169,7 +170,8 @@ def build_whatsapp_report(df_all, df_n500):
     msg += f"7️⃣ *1D+1W+1M Green (ALL NSE)*: {len(f7_df)} stocks\n"
     msg += f"8️⃣ *1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f8_df)} stocks\n"
     msg += f"9️⃣ *Prev 1D Red + 1D Green + 1M Green + Prev 1M Green + Vol Contraction (ALL NSE)*: {len(f9_df)} stocks\n"
-    msg += f"🔟 *Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f10_df)} stocks\n\n"
+    msg += f"🔟 *Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f10_df)} stocks\n"
+    msg += f"1️⃣1️⃣ *Prev 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f11_df)} stocks\n\n"
     
     if not f3_df.empty:
         msg += f"🏆 *TOP MULTI-TF SUPER SIGNALS (File 3)*:\n"
@@ -182,7 +184,7 @@ def build_whatsapp_report(df_all, df_n500):
             msg += f"• *{row['Symbol']}* (₹{row['Price (₹)']}): 🟢 1D ({row['1D %']}%) 1W ({row['1W %']}%) 1M ({row['1M %']}%) | 🔴 Prev 1M\n"
         msg += "\n"
             
-    msg += f"📁 12 separate strategy Excel files attached below."
+    msg += f"📁 13 separate strategy Excel files attached below."
     return msg
 
 
@@ -230,14 +232,14 @@ def run_daily_notification():
     date_str = datetime.now().strftime("%d-%b-%Y")
     out_dir = os.path.dirname(os.path.abspath(__file__))
     
-    # Filter DataFrames for each of the 12 strategies:
+    # Filter DataFrames for each of the 13 strategies:
     # Files 1, 2, 3, 4: Restricted to NIFTY 500 STOCKS
     f1_df = df_n500[df_n500["Pure Vol Exp + Deliv Acc"] == "YES"]
     f2_df = df_n500[df_n500["Pure Deliv Acc + Vol Dec"] == "YES"]
     f3_df = df_n500[df_n500["Multi-TF Super Signal"] == "YES"]
     f4_df = df_n500[df_n500["Multi-TF Deliv Accumulation"] == "YES"]
 
-    # Files 1.7, 2.7, 5, 6, 7, 8, 9, 10: Scans ALL ~2,670 NSE STOCKS
+    # Files 1.7, 2.7, 5, 6, 7, 8, 9, 10, 11: Scans ALL ~2,670 NSE STOCKS
     f1_7_df = df_all[df_all["Pure Vol Exp Deliv Acc 3TF Green"] == "YES"]
     f2_7_df = df_all[df_all["Pure Deliv Acc Vol Dec 3TF Green"] == "YES"]
     f5_df = df_all[df_all["1D+1W+1M Green Prev 1M Red"] == "YES"]
@@ -246,6 +248,7 @@ def run_daily_notification():
     f8_df = df_all[df_all["1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
     f9_df = df_all[df_all["1M Green Prev 1M Green Vol Contraction"] == "YES"]
     f10_df = df_all[df_all["Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
+    f11_df = df_all[df_all["Prev 1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
 
     # File 1: Pure Vol Expansion + Deliv Accumulation (Nifty 500)
     file_1 = os.path.join(out_dir, f"pure_vol_exp_deliv_acc_nifty500_{timestamp_str}.xlsx")
@@ -319,7 +322,13 @@ def run_daily_notification():
         f10_df.to_excel(writer, sheet_name="6-Cond Candle Pattern", index=False)
         df_all.to_excel(writer, sheet_name="ALL NSE Stocks Signals", index=False)
 
-    print(f"💾 Saved 12 Strategy Files:")
+    # File 11: Prev 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE STOCKS)
+    file_11 = os.path.join(out_dir, f"candle_pattern_prev_1d_red_prev_1w_red_1w_green_prev_1m_red_1m_green_ALL_NSE_{timestamp_str}.xlsx")
+    with pd.ExcelWriter(file_11, engine="openpyxl") as writer:
+        f11_df.to_excel(writer, sheet_name="5-Cond Prev 1D Red Pattern", index=False)
+        df_all.to_excel(writer, sheet_name="ALL NSE Stocks Signals", index=False)
+
+    print(f"💾 Saved 13 Strategy Files:")
     print(f"   1. {file_1} ({len(f1_df)} stocks)")
     print(f"   1.7 {file_1_7} ({len(f1_7_df)} stocks)")
     print(f"   2. {file_2} ({len(f2_df)} stocks)")
@@ -332,11 +341,12 @@ def run_daily_notification():
     print(f"   8. {file_8} ({len(f8_df)} stocks)")
     print(f"   9. {file_9} ({len(f9_df)} stocks)")
     print(f"   10. {file_10} ({len(f10_df)} stocks)")
+    print(f"   11. {file_11} ({len(f11_df)} stocks)")
     
     report_text = build_whatsapp_report(df_all, df_n500)
     
-    # Dispatch all 12 files via Telegram Bot
-    print("\n📤 Sending 12 files via Telegram Bot...")
+    # Dispatch all 13 files via Telegram Bot
+    print("\n📤 Sending 13 files via Telegram Bot...")
     for file_path, caption in [
         (file_1, f"1️⃣ File 1: Pure Vol Exp + Deliv Acc [Nifty 500] ({len(f1_df)} stocks) — {date_str}"),
         (file_1_7, f"1️⃣.7️⃣ File 1.7: Vol Exp + Deliv Acc + 3-TF Green [ALL NSE] ({len(f1_7_df)} stocks) — {date_str}"),
@@ -350,6 +360,7 @@ def run_daily_notification():
         (file_8, f"8️⃣ File 8: 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green [ALL NSE] ({len(f8_df)} stocks) — {date_str}"),
         (file_9, f"9️⃣ File 9: Prev 1D Red + 1D Green + 1M Green + Prev 1M Green + Vol Contraction [ALL NSE] ({len(f9_df)} stocks) — {date_str}"),
         (file_10, f"🔟 File 10: Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green [ALL NSE] ({len(f10_df)} stocks) — {date_str}"),
+        (file_11, f"1️⃣1️⃣ File 11: Prev 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green [ALL NSE] ({len(f11_df)} stocks) — {date_str}"),
     ]:
         send_telegram_file(file_path, caption)
         import time; time.sleep(1.5)
