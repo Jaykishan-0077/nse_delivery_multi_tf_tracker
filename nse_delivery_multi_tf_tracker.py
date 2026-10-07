@@ -427,16 +427,20 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # 9. 1M Green + Prev 1M Green + Prev 1M Vol Contraction
     candle_pattern_strat9 = pattern_strat9
 
+    # 9.1 Prev 1D Red + 1D Green + 1M Green + Prev 1M Red + Vol Contraction (formerly File 12)
+    pattern_strat9_1 = (cand_prev_1d == "RED") and (cand_1d == "GREEN") and (cand_1m == "GREEN") and (cand_prev_1m == "RED") and c_info.get("Prev 1M Vol Less", False)
+    candle_pattern_strat9_1 = pattern_strat9_1
+
     # 10. Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green
     candle_pattern_strat10 = pattern_strat10
 
-    # 11. Prev 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green
-    pattern_strat11 = (cand_prev_1d == "RED") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
-    candle_pattern_strat11 = pattern_strat11
+    # 10.1 Prev 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (formerly File 11)
+    pattern_strat10_1 = (cand_prev_1d == "RED") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
+    candle_pattern_strat10_1 = pattern_strat10_1
 
-    # 12. Prev 1D Red + 1D Green + 1M Green + Prev 1M Red + Vol Contraction
-    pattern_strat12 = (cand_prev_1d == "RED") and (cand_1d == "GREEN") and (cand_1m == "GREEN") and (cand_prev_1m == "RED") and c_info.get("Prev 1M Vol Less", False)
-    candle_pattern_strat12 = pattern_strat12
+    # 10.2 Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green + Vol Contraction
+    pattern_strat10_2 = (cand_prev_1d == "RED") and (cand_1d == "GREEN") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN") and c_info.get("Prev 1M Vol Less", False)
+    candle_pattern_strat10_2 = pattern_strat10_2
 
     return {
         "Symbol": symbol,
@@ -472,9 +476,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D+1W+1M Green": "YES" if candle_pattern_3tf_green else "NO",
         "1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_5cond else "NO",
         "1M Green Prev 1M Green Vol Contraction": "YES" if candle_pattern_strat9 else "NO",
+        "Prev 1D Red 1D Green 1M Green Prev 1M Red Vol Contraction": "YES" if candle_pattern_strat9_1 else "NO",
         "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10 else "NO",
-        "Prev 1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat11 else "NO",
-        "Prev 1D Red 1D Green 1M Green Prev 1M Red Vol Contraction": "YES" if candle_pattern_strat12 else "NO"
+        "Prev 1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10_1 else "NO",
+        "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green Vol Contraction": "YES" if candle_pattern_strat10_2 else "NO"
     }
 
 
