@@ -145,6 +145,7 @@ def build_whatsapp_report(df_all, df_n500):
     f1_df = df_n500[df_n500["Pure Vol Exp + Deliv Acc"] == "YES"]
     f1_7_df = df_all[df_all["Pure Vol Exp Deliv Acc 3TF Green"] == "YES"]
     f2_df = df_n500[df_n500["Pure Deliv Acc + Vol Dec"] == "YES"]
+    f2_1_df = df_all[df_all["Pure Deliv Acc Vol Dec Accelerating"] == "YES"]
     f2_7_df = df_all[df_all["Pure Deliv Acc Vol Dec 3TF Green"] == "YES"]
     f3_df = df_n500[df_n500["Multi-TF Super Signal"] == "YES"]
     f4_df = df_n500[df_n500["Multi-TF Deliv Accumulation"] == "YES"]
@@ -159,12 +160,13 @@ def build_whatsapp_report(df_all, df_n500):
     f10_2_df = df_all[df_all["Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green Vol Contraction"] == "YES"]
     f13_df = df_all[df_all["1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close"] == "YES"]
     
-    msg = f"🌟 *NSE DAILY 16-STRATEGY SCANNER REPORT* ({date_str})\n"
+    msg = f"🌟 *NSE DAILY 17-STRATEGY SCANNER REPORT* ({date_str})\n"
     msg += f"─────────────────────────────────────────────\n"
     msg += f"🔍 Total Stocks Analyzed: {len(df_all)} (Nifty 500: {len(df_n500)})\n"
     msg += f"1️⃣ *Pure Vol Exp + Deliv Acc (Nifty 500)*: {len(f1_df)} stocks\n"
     msg += f"1️⃣.7️⃣ *Pure Vol Exp + Deliv Acc + 3-TF Green (ALL NSE)*: {len(f1_7_df)} stocks\n"
     msg += f"2️⃣ *Pure Deliv Acc + Vol Dec (Nifty 500)*: {len(f2_df)} stocks\n"
+    msg += f"2️⃣.1️⃣ *Pure Deliv Acc + Vol Dec + Accelerating Deliv (ALL NSE)*: {len(f2_1_df)} stocks\n"
     msg += f"2️⃣.7️⃣ *Pure Deliv Acc + Vol Dec + 3-TF Green (ALL NSE)*: {len(f2_7_df)} stocks\n"
     msg += f"3️⃣ *Multi-TF Super Signal (Nifty 500)*: {len(f3_df)} stocks\n"
     msg += f"4️⃣ *Multi-TF Deliv Acc + Vol Dec (Nifty 500)*: {len(f4_df)} stocks\n"
@@ -245,8 +247,9 @@ def run_daily_notification():
     f3_df = df_n500[df_n500["Multi-TF Super Signal"] == "YES"]
     f4_df = df_n500[df_n500["Multi-TF Deliv Accumulation"] == "YES"]
 
-    # Files 1.7, 2.7, 5, 6, 7, 8, 9, 9.1, 10, 10.1, 10.2: Scans ALL ~2,670 NSE STOCKS
+    # Files 1.7, 2.1, 2.7, 5, 6, 7, 8, 9, 9.1, 10, 10.1, 10.2, 13: Scans ALL ~2,670 NSE STOCKS
     f1_7_df = df_all[df_all["Pure Vol Exp Deliv Acc 3TF Green"] == "YES"]
+    f2_1_df = df_all[df_all["Pure Deliv Acc Vol Dec Accelerating"] == "YES"]
     f2_7_df = df_all[df_all["Pure Deliv Acc Vol Dec 3TF Green"] == "YES"]
     f5_df = df_all[df_all["1D+1W+1M Green Prev 1M Red"] == "YES"]
     f6_df = df_all[df_all["1D+1W+1M Green Prev 1W Red"] == "YES"]
@@ -276,6 +279,12 @@ def run_daily_notification():
     with pd.ExcelWriter(file_2, engine="openpyxl") as writer:
         f2_df.to_excel(writer, sheet_name="Pure Deliv Acc + Vol Dec", index=False)
         df_n500.to_excel(writer, sheet_name="Nifty 500 All Signals", index=False)
+
+    # File 2.1: Pure Deliv Accumulation + Vol Contraction + Accelerating Deliv Expansion (ALL NSE STOCKS)
+    file_2_1 = os.path.join(out_dir, f"pure_deliv_acc_vol_contraction_accelerating_ALL_NSE_{timestamp_str}.xlsx")
+    with pd.ExcelWriter(file_2_1, engine="openpyxl") as writer:
+        f2_1_df.to_excel(writer, sheet_name="Deliv Acc Vol Dec Accelerating", index=False)
+        df_all.to_excel(writer, sheet_name="ALL NSE Stocks Signals", index=False)
 
     # File 2.7: Pure Deliv Accumulation + Vol Contraction + 3-TF Green (ALL NSE STOCKS)
     file_2_7 = os.path.join(out_dir, f"pure_deliv_acc_vol_contraction_3tf_green_ALL_NSE_{timestamp_str}.xlsx")
@@ -355,10 +364,11 @@ def run_daily_notification():
         f13_df.to_excel(writer, sheet_name="1D Red Prev 1D Red 1W 1M Red", index=False)
         df_all.to_excel(writer, sheet_name="ALL NSE Stocks Signals", index=False)
 
-    print(f"💾 Saved 16 Strategy Files:")
+    print(f"💾 Saved 17 Strategy Files:")
     print(f"   1. {file_1} ({len(f1_df)} stocks)")
     print(f"   1.7 {file_1_7} ({len(f1_7_df)} stocks)")
     print(f"   2. {file_2} ({len(f2_df)} stocks)")
+    print(f"   2.1 {file_2_1} ({len(f2_1_df)} stocks)")
     print(f"   2.7 {file_2_7} ({len(f2_7_df)} stocks)")
     print(f"   3. {file_3} ({len(f3_df)} stocks)")
     print(f"   4. {file_4} ({len(f4_df)} stocks)")
@@ -375,12 +385,13 @@ def run_daily_notification():
     
     report_text = build_whatsapp_report(df_all, df_n500)
     
-    # Dispatch all 16 files via Telegram Bot
-    print("\n📤 Sending 16 files via Telegram Bot...")
+    # Dispatch all 17 files via Telegram Bot
+    print("\n📤 Sending 17 files via Telegram Bot...")
     for file_path, caption in [
         (file_1, f"1️⃣ File 1: Pure Vol Exp + Deliv Acc [Nifty 500] ({len(f1_df)} stocks) — {date_str}"),
         (file_1_7, f"1️⃣.7️⃣ File 1.7: Vol Exp + Deliv Acc + 3-TF Green [ALL NSE] ({len(f1_7_df)} stocks) — {date_str}"),
         (file_2, f"2️⃣ File 2: Pure Deliv Acc + Vol Dec [Nifty 500] ({len(f2_df)} stocks) — {date_str}"),
+        (file_2_1, f"2️⃣.1️⃣ File 2.1: Pure Deliv Acc + Vol Dec + Accelerating Deliv [ALL NSE] ({len(f2_1_df)} stocks) — {date_str}"),
         (file_2_7, f"2️⃣.7️⃣ File 2.7: Deliv Acc + Vol Dec + 3-TF Green [ALL NSE] ({len(f2_7_df)} stocks) — {date_str}"),
         (file_3, f"3️⃣ File 3: Multi-TF Super Signal [Nifty 500] ({len(f3_df)} stocks) — {date_str}"),
         (file_4, f"4️⃣ File 4: Multi-TF Deliv Accumulation [Nifty 500] ({len(f4_df)} stocks) — {date_str}"),
@@ -403,7 +414,7 @@ def run_daily_notification():
     if media_id:
         send_whatsapp_template_meta(media_id, file_3, report_text)
 
-    print("\n🎉 Multi-Timeframe 16-file notification pipeline finished successfully!\n")
+    print("\n🎉 Multi-Timeframe 17-file notification pipeline finished successfully!\n")
 
 
 if __name__ == "__main__":
