@@ -378,6 +378,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     c_info = candle_dict.get(symbol, {
         "1D Candle": "N/A", "Prev 1D Candle": "N/A", "1W Candle": "N/A", "Prev 1W Candle": "N/A", "1M Candle": "N/A", "Prev 1M Candle": "N/A",
         "Prev 1M Vol Less": False, "Prev 1M Vol": 0, "Avg Monthly Vol": 0,
+        "1D Open & Close > Prev Close": False,
         "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0
     })
 
@@ -412,6 +413,15 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
 
     # 2.2 Pure Deliv Acc + Vol Dec + Accelerating Delivery Expansion + 1D Green (ALL NSE STOCKS)
     pure_deliv_acc_vol_dec_accelerating_1d_green = pure_deliv_acc_vol_dec_accelerating and (cand_1d == "GREEN")
+
+    # 2.3 Pure Deliv Acc + Vol Dec + Accelerating Delivery Expansion + 1D Red + Prev 1D Red + (1D Open & Close > Prev Close) (ALL NSE STOCKS)
+    cond_1d_open_close_gt_prev_close = c_info.get("1D Open & Close > Prev Close", False)
+    pure_deliv_acc_vol_dec_accel_1d_red_prev_1d_red_gt_prev_close = (
+        pure_deliv_acc_vol_dec_accelerating and
+        (cand_1d == "RED") and
+        (cand_prev_1d == "RED") and
+        cond_1d_open_close_gt_prev_close
+    )
 
     # 2.7 Pure Deliv Acc + Vol Contraction + 3-TF Green (ALL NSE STOCKS)
     pure_deliv_acc_vol_contraction_3tf_green = pattern_3tf_green and cond1 and cond_vol_dec
@@ -484,6 +494,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Pure Deliv Acc + Vol Dec": "YES" if pure_deliv_acc_vol_dec else "NO",
         "Pure Deliv Acc Vol Dec Accelerating": "YES" if pure_deliv_acc_vol_dec_accelerating else "NO",
         "Pure Deliv Acc Vol Dec Accelerating 1D Green": "YES" if pure_deliv_acc_vol_dec_accelerating_1d_green else "NO",
+        "Pure Deliv Acc Vol Dec Accel 1D Red Prev 1D Red GT Prev Close": "YES" if pure_deliv_acc_vol_dec_accel_1d_red_prev_1d_red_gt_prev_close else "NO",
         "Pure Deliv Acc Vol Dec 3TF Green": "YES" if pure_deliv_acc_vol_contraction_3tf_green else "NO",
         "Multi-TF Super Signal": "YES" if multi_tf_super_signal else "NO",
         "Multi-TF Deliv Accumulation": "YES" if multi_tf_deliv_accumulation else "NO",
