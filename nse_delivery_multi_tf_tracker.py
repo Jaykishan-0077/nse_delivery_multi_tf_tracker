@@ -520,6 +520,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     )
     candle_pattern_strat13_1 = pattern_strat13_1
 
+    # 13.2 1D Red + Prev 1D Red + 1W Red + 1M Red + (1D Open & Close > Prev Close) + all logic of 2.1 file
+    pattern_strat13_2 = pattern_strat13 and pure_deliv_acc_vol_dec_accelerating
+    candle_pattern_strat13_2 = pattern_strat13_2
+
     return {
         "Symbol": symbol,
         "Price (₹)": c_info["Latest Price"],
@@ -562,7 +566,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Prev 1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10_1 else "NO",
         "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green Vol Contraction": "YES" if candle_pattern_strat10_2 else "NO",
         "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close": "YES" if candle_pattern_strat13 else "NO",
-        "1D Red Prev 1D Red 1W Red Prev 1W Red 1M Red Prev 1M Red 1D 1W 1M Open Close GT Prev Close": "YES" if candle_pattern_strat13_1 else "NO"
+        "1D Red Prev 1D Red 1W Red Prev 1W Red 1M Red Prev 1M Red 1D 1W 1M Open Close GT Prev Close": "YES" if candle_pattern_strat13_1 else "NO",
+        "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close File 2.1 Logic": "YES" if candle_pattern_strat13_2 else "NO"
     }
 
 
