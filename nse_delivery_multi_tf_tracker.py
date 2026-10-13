@@ -481,6 +481,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # 7. Pure 3-TF Green (1D+1W+1M Green)
     candle_pattern_3tf_green = pattern_3tf_green
 
+    # 7.1 1D+1W+1M Green + all logic of file no. 2.1
+    pattern_strat7_1 = pattern_3tf_green and pure_deliv_acc_vol_dec_accelerating
+    candle_pattern_strat7_1 = pattern_strat7_1
+
     # 8. 5-Cond Candle Pattern (1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green)
     candle_pattern_5cond = pattern_5cond
 
@@ -559,6 +563,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D+1W+1M Green Prev 1M Red": "YES" if candle_pattern_prev_1m_red else "NO",
         "1D+1W+1M Green Prev 1W Red": "YES" if candle_pattern_prev_1w_red else "NO",
         "1D+1W+1M Green": "YES" if candle_pattern_3tf_green else "NO",
+        "1D+1W+1M Green File 2.1 Logic": "YES" if candle_pattern_strat7_1 else "NO",
         "1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_5cond else "NO",
         "1M Green Prev 1M Green Vol Contraction": "YES" if candle_pattern_strat9 else "NO",
         "Prev 1D Red 1D Green 1M Green Prev 1M Red Vol Contraction": "YES" if candle_pattern_strat9_1 else "NO",
