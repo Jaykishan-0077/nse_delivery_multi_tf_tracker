@@ -226,11 +226,11 @@ def run_daily_notification():
     print(f"ℹ️ Loaded {len(all_nse_symbols)} active symbols from NSE MTO delivery database.")
     print(f"ℹ️ Loaded {len(nifty500_symbols)} official Nifty 500 stock symbols.")
 
-    # Fetch official NSE Bhavcopy prices for the latest trading day to ensure zero price lag
-    latest_bhav_dict = fetch_official_nse_bhavdata(latest_key)
+    # Fetch official NSE Bhavcopy prices for the last 5 trading days to guarantee 100% accurate daily & weekly candles
+    recent_bhav_dicts = [fetch_official_nse_bhavdata(dk) for dk in date_keys[:5] if dk]
 
     # Fetch candle data for ALL NSE symbols patched with official NSE prices
-    candle_dict = fetch_multi_tf_candles(all_nse_symbols, latest_bhav_dict=latest_bhav_dict)
+    candle_dict = fetch_multi_tf_candles(all_nse_symbols, bhav_data=recent_bhav_dicts)
 
     results = []
     for sym in all_nse_symbols:

@@ -126,7 +126,7 @@ def fetch_all_mto(target_days=30):
 def fetch_official_nse_bhavdata(date_str):
     """
     Fetch official NSE security bhavdata CSV for a specific date (DDMMYYYY format)
-    to get exact, real-time official Open, High, Low, Close prices.
+    to get exact, real-time official Open, High, Low, Close, and Volume.
     """
     url = f"https://archives.nseindia.com/products/content/sec_bhavdata_full_{date_str}.csv"
     try:
@@ -139,13 +139,18 @@ def fetch_official_nse_bhavdata(date_str):
             for idx, row in df.iterrows():
                 sym = str(row.get("SYMBOL", "")).strip()
                 series = str(row.get("SERIES", "")).strip()
-                if series in ["EQ", "BE"]:
+                if series in ["EQ", "BE", "SM", "ST", "BZ"]:
+                    try:
+                        vol = float(str(row.get("TTL_TRD_QNTY", 0)).strip().replace(",", ""))
+                    except (ValueError, TypeError):
+                        vol = 0.0
                     try:
                         bhav_dict[sym] = {
                             "Open": float(row["OPEN_PRICE"]),
                             "High": float(row["HIGH_PRICE"]),
                             "Low": float(row["LOW_PRICE"]),
                             "Close": float(row["CLOSE_PRICE"]),
+                            "Volume": vol,
                             "Date": dt_obj
                         }
                     except (ValueError, KeyError):
@@ -158,14 +163,31 @@ def fetch_official_nse_bhavdata(date_str):
     return {}
 
 
-def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
+def fetch_multi_tf_candles(symbols, bhav_data=None):
     """
     Download daily OHLC price history for stock symbols via yfinance
     and calculate 1D, 1W, and 1M candle positivity (GREEN vs RED).
-    Patches yfinance data with official NSE Bhavdata to ensure zero price lagging.
+    Patches yfinance data with official NSE Bhavdata across recent trading days
+    to ensure zero price lagging and prevent missing candle days (e.g. illiquid stocks missing in yfinance).
     """
     print(f"📈 Fetching multi-timeframe candle data for {len(symbols)} stocks via yfinance...")
     candle_dict = {}
+
+    # Normalize bhav_data into a list of daily bhav_dicts sorted chronologically
+    bhav_dicts = []
+    if isinstance(bhav_data, dict):
+        first_val = next(iter(bhav_data.values())) if bhav_data else None
+        if isinstance(first_val, dict) and "Open" not in first_val:
+            bhav_dicts = [d for d in bhav_data.values() if isinstance(d, dict)]
+        else:
+            bhav_dicts = [bhav_data]
+    elif isinstance(bhav_data, list):
+        bhav_dicts = [b for b in bhav_data if isinstance(b, dict)]
+
+    bhav_dicts = sorted(
+        bhav_dicts,
+        key=lambda b: next(iter(b.values()))["Date"] if b and len(b) > 0 else datetime.min
+    )
     
     today_dt = datetime.now()
     current_month_start = datetime(today_dt.year, today_dt.month, 1)
@@ -197,33 +219,38 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                 elif len(chunk) == 1:
                     df_sym = data.dropna(subset=["Close", "Open"]).copy()
                 else:
-                    continue
-
-                if df_sym.empty:
-                    continue
+                    df_sym = pd.DataFrame()
 
                 # Filter out synthetic 0-volume holiday rows inserted by yfinance (e.g. market holidays)
-                if "Volume" in df_sym.columns:
+                if not df_sym.empty and "Volume" in df_sym.columns:
                     df_sym = df_sym[~((df_sym["Volume"] == 0) & (df_sym["Open"] == df_sym["Close"]))]
 
-                # Patch/sync latest row with official NSE Bhavdata if available to prevent 1-day yfinance lag
-                if latest_bhav_dict and sym in latest_bhav_dict:
-                    b_info = latest_bhav_dict[sym]
-                    latest_dt = pd.Timestamp(b_info["Date"])
-                    if df_sym.empty or df_sym.index[-1] < latest_dt:
-                        new_row = pd.DataFrame([{
-                            "Open": b_info["Open"],
-                            "High": b_info["High"],
-                            "Low": b_info["Low"],
-                            "Close": b_info["Close"],
-                            "Volume": 0
-                        }], index=[latest_dt])
-                        df_sym = pd.concat([df_sym, new_row])
-                    elif df_sym.index[-1] == latest_dt:
-                        df_sym.loc[latest_dt, "Close"] = b_info["Close"]
-                        df_sym.loc[latest_dt, "Open"]  = b_info["Open"]
-                        df_sym.loc[latest_dt, "High"]  = b_info["High"]
-                        df_sym.loc[latest_dt, "Low"]   = b_info["Low"]
+                # Patch/sync recent rows with official NSE Bhavdata to prevent yfinance missing bars/lag
+                for b_dict in bhav_dicts:
+                    if sym in b_dict:
+                        b_info = b_dict[sym]
+                        b_dt = pd.Timestamp(b_info["Date"])
+                        if df_sym.index.tz is not None and b_dt.tz is None:
+                            b_dt = b_dt.tz_localize(df_sym.index.tz)
+                        elif df_sym.index.tz is None and b_dt.tz is not None:
+                            b_dt = b_dt.tz_convert(None)
+
+                        if b_dt not in df_sym.index:
+                            new_row = pd.DataFrame([{
+                                "Open": b_info["Open"],
+                                "High": b_info["High"],
+                                "Low": b_info["Low"],
+                                "Close": b_info["Close"],
+                                "Volume": b_info.get("Volume", 0)
+                            }], index=[b_dt])
+                            df_sym = pd.concat([df_sym, new_row])
+                        else:
+                            df_sym.loc[b_dt, "Open"]  = b_info["Open"]
+                            df_sym.loc[b_dt, "High"]  = b_info["High"]
+                            df_sym.loc[b_dt, "Low"]   = b_info["Low"]
+                            df_sym.loc[b_dt, "Close"] = b_info["Close"]
+                            if "Volume" in df_sym.columns and b_info.get("Volume", 0) > 0:
+                                df_sym.loc[b_dt, "Volume"] = b_info["Volume"]
 
                 if len(df_sym) < 2:
                     continue
@@ -551,11 +578,11 @@ def run_screener(target_trading_days=30):
         print("❌ No MTO delivery data found.")
         return None
 
-    latest_key = sorted(daily_dfs.keys(), key=lambda x: datetime.strptime(x, "%d%m%Y"), reverse=True)[0]
-    latest_bhav_dict = fetch_official_nse_bhavdata(latest_key)
+    date_keys = sorted(daily_dfs.keys(), key=lambda x: datetime.strptime(x, "%d%m%Y"), reverse=True)
+    recent_bhav_dicts = [fetch_official_nse_bhavdata(dk) for dk in date_keys[:5]]
 
     # Load candle data for Nifty 500 symbols patched with official NSE Bhavdata
-    candle_dict = fetch_multi_tf_candles(symbols, latest_bhav_dict=latest_bhav_dict)
+    candle_dict = fetch_multi_tf_candles(symbols, bhav_data=recent_bhav_dicts)
 
     results = []
     print("🔍 Screening stocks for Multi-Timeframe Super Accumulation...")
