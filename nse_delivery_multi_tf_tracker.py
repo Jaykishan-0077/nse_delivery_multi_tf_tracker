@@ -236,6 +236,7 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                 close_1d = float(last_row["Close"])
                 open_1d  = float(last_row["Open"])
                 is_1d_green = close_1d > open_1d
+                is_1d_red   = close_1d < open_1d
 
                 # Prev 1D Candle (Previous Daily Bar)
                 if len(df_sym) >= 2:
@@ -259,6 +260,7 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                     open_1w  = float(df_sym.iloc[-min(5, len(df_sym))]["Open"])
                     close_1w = float(df_sym.iloc[-1]["Close"])
                 is_1w_green = close_1w > open_1w
+                is_1w_red   = close_1w < open_1w
 
                 # Prev 1W Candle (Previous Weekly) - Open vs Close of previous trading week
                 df_prev_week = df_sym[(df_sym.index >= pd.Timestamp(prev_week_start)) & (df_sym.index < pd.Timestamp(current_week_start))]
@@ -282,6 +284,7 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                     open_1m  = float(df_sym.iloc[-min(20, len(df_sym))]["Open"])
                     close_1m = float(df_sym.iloc[-1]["Close"])
                 is_1m_green = close_1m > open_1m
+                is_1m_red   = close_1m < open_1m
 
                 # Prev 1M Candle (Previous Monthly) - Open vs Close of previous calendar month
                 df_prev_month = df_sym[(df_sym.index >= pd.Timestamp(prev_month_start)) & (df_sym.index <= pd.Timestamp(prev_month_end))]
@@ -309,12 +312,12 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                 is_prev_1m_vol_less = (vol_prev_1m > 0) and (avg_monthly_vol > 0) and (vol_prev_1m < avg_monthly_vol)
 
                 candle_dict[sym] = {
-                    "1D Candle": "GREEN" if is_1d_green else "RED",
-                    "Prev 1D Candle": "RED" if is_prev_1d_red else ("GREEN" if is_prev_1d_green else "N/A"),
-                    "1W Candle": "GREEN" if is_1w_green else "RED",
-                    "Prev 1W Candle": "RED" if is_prev_1w_red else "GREEN",
-                    "1M Candle": "GREEN" if is_1m_green else "RED",
-                    "Prev 1M Candle": "GREEN" if is_prev_1m_green else ("RED" if is_prev_1m_red else "N/A"),
+                    "1D Candle": "GREEN" if is_1d_green else ("RED" if is_1d_red else "DOJI"),
+                    "Prev 1D Candle": "RED" if is_prev_1d_red else ("GREEN" if is_prev_1d_green else "DOJI"),
+                    "1W Candle": "GREEN" if is_1w_green else ("RED" if is_1w_red else "DOJI"),
+                    "Prev 1W Candle": "RED" if is_prev_1w_red else ("GREEN" if is_prev_1w_green else "DOJI"),
+                    "1M Candle": "GREEN" if is_1m_green else ("RED" if is_1m_red else "DOJI"),
+                    "Prev 1M Candle": "GREEN" if is_prev_1m_green else ("RED" if is_prev_1m_red else "DOJI"),
                     "Prev 1M Vol Less": is_prev_1m_vol_less,
                     "Prev 1M Vol": int(vol_prev_1m),
                     "Avg Monthly Vol": int(avg_monthly_vol),
