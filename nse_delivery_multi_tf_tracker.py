@@ -266,8 +266,12 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                     open_prev_1w  = float(df_prev_week.iloc[0]["Open"])
                     close_prev_1w = float(df_prev_week.iloc[-1]["Close"])
                     is_prev_1w_red = close_prev_1w < open_prev_1w
+                    is_prev_1w_green = close_prev_1w > open_prev_1w
+                    is_1w_open_close_gt_prev_close = (open_1w > close_prev_1w) and (close_1w > close_prev_1w)
                 else:
                     is_prev_1w_red = False
+                    is_prev_1w_green = False
+                    is_1w_open_close_gt_prev_close = False
 
                 # 1M Candle (Current Monthly) - Open of first trading day of current month vs Latest Close
                 df_month = df_sym[df_sym.index >= pd.Timestamp(current_month_start)]
@@ -313,6 +317,7 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                     "Prev 1M Vol": int(vol_prev_1m),
                     "Avg Monthly Vol": int(avg_monthly_vol),
                     "1D Open & Close > Prev Close": is_1d_open_close_gt_prev_close,
+                    "1W Open & Close > Prev Close": is_1w_open_close_gt_prev_close,
                     "1D %": round(((close_1d - open_1d) / open_1d) * 100, 2),
                     "1W %": round(((close_1w - open_1w) / open_1w) * 100, 2),
                     "1M %": round(((close_1m - open_1m) / open_1m) * 100, 2),
@@ -379,6 +384,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D Candle": "N/A", "Prev 1D Candle": "N/A", "1W Candle": "N/A", "Prev 1W Candle": "N/A", "1M Candle": "N/A", "Prev 1M Candle": "N/A",
         "Prev 1M Vol Less": False, "Prev 1M Vol": 0, "Avg Monthly Vol": 0,
         "1D Open & Close > Prev Close": False,
+        "1W Open & Close > Prev Close": False,
         "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0
     })
 
@@ -466,6 +472,17 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_strat13 = (cand_1m == "RED") and (cand_1w == "RED") and (cand_prev_1d == "RED") and (cand_1d == "RED") and c_info.get("1D Open & Close > Prev Close", False)
     candle_pattern_strat13 = pattern_strat13
 
+    # 13.1 1D Red + Prev 1D Red + 1W Red + Prev 1W Red + 1M Red + (1W Open & Close > Prev Close)
+    pattern_strat13_1 = (
+        (cand_1d == "RED") and
+        (cand_prev_1d == "RED") and
+        (cand_1w == "RED") and
+        (cand_prev_1w == "RED") and
+        (cand_1m == "RED") and
+        c_info.get("1W Open & Close > Prev Close", False)
+    )
+    candle_pattern_strat13_1 = pattern_strat13_1
+
     return {
         "Symbol": symbol,
         "Price (₹)": c_info["Latest Price"],
@@ -507,7 +524,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10 else "NO",
         "Prev 1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10_1 else "NO",
         "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green Vol Contraction": "YES" if candle_pattern_strat10_2 else "NO",
-        "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close": "YES" if candle_pattern_strat13 else "NO"
+        "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close": "YES" if candle_pattern_strat13 else "NO",
+        "1D Red Prev 1D Red 1W Red Prev 1W Red 1M Red 1W Open Close GT Prev Close": "YES" if candle_pattern_strat13_1 else "NO"
     }
 
 
