@@ -221,7 +221,8 @@ def run_daily_notification():
         return
 
     # Extract all active NSE symbols from MTO files (~2,670 stocks)
-    latest_key = sorted(daily_dfs.keys(), key=lambda x: datetime.strptime(x, "%d%m%Y"), reverse=True)[0]
+    date_keys = sorted(daily_dfs.keys(), key=lambda x: datetime.strptime(x, "%d%m%Y"), reverse=True)
+    latest_key = date_keys[0]
     all_nse_symbols = sorted(daily_dfs[latest_key]["Symbol"].unique().tolist())
     print(f"ℹ️ Loaded {len(all_nse_symbols)} active symbols from NSE MTO delivery database.")
     print(f"ℹ️ Loaded {len(nifty500_symbols)} official Nifty 500 stock symbols.")
