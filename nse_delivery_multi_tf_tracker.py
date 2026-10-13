@@ -290,10 +290,12 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                     close_prev_1m = float(df_prev_month.iloc[-1]["Close"])
                     is_prev_1m_red = close_prev_1m < open_prev_1m
                     is_prev_1m_green = close_prev_1m > open_prev_1m
+                    is_1m_open_close_gt_prev_close = (open_1m > close_prev_1m) and (close_1m > close_prev_1m)
                     vol_prev_1m   = float(df_prev_month["Volume"].sum())
                 else:
                     is_prev_1m_red = False
                     is_prev_1m_green = False
+                    is_1m_open_close_gt_prev_close = False
                     vol_prev_1m = 0.0
 
                 # Past completed months average volume calculation
@@ -318,6 +320,7 @@ def fetch_multi_tf_candles(symbols, latest_bhav_dict=None):
                     "Avg Monthly Vol": int(avg_monthly_vol),
                     "1D Open & Close > Prev Close": is_1d_open_close_gt_prev_close,
                     "1W Open & Close > Prev Close": is_1w_open_close_gt_prev_close,
+                    "1M Open & Close > Prev Close": is_1m_open_close_gt_prev_close,
                     "1D %": round(((close_1d - open_1d) / open_1d) * 100, 2),
                     "1W %": round(((close_1w - open_1w) / open_1w) * 100, 2),
                     "1M %": round(((close_1m - open_1m) / open_1m) * 100, 2),
@@ -385,6 +388,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Prev 1M Vol Less": False, "Prev 1M Vol": 0, "Avg Monthly Vol": 0,
         "1D Open & Close > Prev Close": False,
         "1W Open & Close > Prev Close": False,
+        "1M Open & Close > Prev Close": False,
         "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0
     })
 
@@ -472,14 +476,17 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_strat13 = (cand_1m == "RED") and (cand_1w == "RED") and (cand_prev_1d == "RED") and (cand_1d == "RED") and c_info.get("1D Open & Close > Prev Close", False)
     candle_pattern_strat13 = pattern_strat13
 
-    # 13.1 1D Red + Prev 1D Red + 1W Red + Prev 1W Red + 1M Red + (1W Open & Close > Prev Close)
+    # 13.1 1D Red + Prev 1D Red + 1W Red + Prev 1W Red + 1M Red + Prev 1M Red + (1D Open & Close > Prev Close) & (1W Open & Close > Prev Close) & (1M Open & Close > Prev Close)
     pattern_strat13_1 = (
         (cand_1d == "RED") and
         (cand_prev_1d == "RED") and
         (cand_1w == "RED") and
         (cand_prev_1w == "RED") and
         (cand_1m == "RED") and
-        c_info.get("1W Open & Close > Prev Close", False)
+        (cand_prev_1m == "RED") and
+        c_info.get("1D Open & Close > Prev Close", False) and
+        c_info.get("1W Open & Close > Prev Close", False) and
+        c_info.get("1M Open & Close > Prev Close", False)
     )
     candle_pattern_strat13_1 = pattern_strat13_1
 
@@ -525,7 +532,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Prev 1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green": "YES" if candle_pattern_strat10_1 else "NO",
         "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green Vol Contraction": "YES" if candle_pattern_strat10_2 else "NO",
         "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close": "YES" if candle_pattern_strat13 else "NO",
-        "1D Red Prev 1D Red 1W Red Prev 1W Red 1M Red 1W Open Close GT Prev Close": "YES" if candle_pattern_strat13_1 else "NO"
+        "1D Red Prev 1D Red 1W Red Prev 1W Red 1M Red Prev 1M Red 1D 1W 1M Open Close GT Prev Close": "YES" if candle_pattern_strat13_1 else "NO"
     }
 
 
