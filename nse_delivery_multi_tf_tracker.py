@@ -524,6 +524,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_strat7_1 = pattern_3tf_green and pure_deliv_acc_vol_dec_accelerating
     candle_pattern_strat7_1 = pattern_strat7_1
 
+    # 7.2 Pure 3-TF Green (1D+1W+1M Green) (NIFTY 50)
+    pattern_strat7_2 = pattern_3tf_green
+    candle_pattern_strat7_2 = pattern_strat7_2
+
     # 8. 5-Cond Candle Pattern (1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green)
     candle_pattern_5cond = pattern_5cond
 

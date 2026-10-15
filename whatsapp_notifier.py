@@ -162,6 +162,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
     f6_df = df_all[df_all["1D+1W+1M Green Prev 1W Red"] == "YES"]
     f7_df = df_all[df_all["1D+1W+1M Green"] == "YES"]
     f7_1_df = df_all[df_all["1D+1W+1M Green File 2.1 Logic"] == "YES"]
+    f7_2_df = df_n50[df_n50["1D+1W+1M Green"] == "YES"] if not df_n50.empty else pd.DataFrame()
     f8_df = df_all[df_all["1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
     f9_df = df_all[df_all["1M Green Prev 1M Green Vol Contraction"] == "YES"]
     f9_1_df = df_all[df_all["Prev 1D Red 1D Green 1M Green Prev 1M Red Vol Contraction"] == "YES"]
@@ -174,7 +175,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
     f13_2_df = df_all[df_all["1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close File 2.1 Logic"] == "YES"]
     f13_3_df = df_n50[df_n50["1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close"] == "YES"] if not df_n50.empty else pd.DataFrame()
     
-    msg = f"🌟 *NSE DAILY 24-STRATEGY SCANNER REPORT* ({date_str})\n"
+    msg = f"🌟 *NSE DAILY 25-STRATEGY SCANNER REPORT* ({date_str})\n"
     msg += f"─────────────────────────────────────────────\n"
     msg += f"🔍 Total Stocks Analyzed: {len(df_all)} (Nifty 500: {len(df_n500)} | Nifty 50: {len(df_n50)})\n"
     msg += f"1️⃣ *Pure Vol Exp + Deliv Acc (Nifty 500)*: {len(f1_df)} stocks\n"
@@ -190,6 +191,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
     msg += f"6️⃣ *1D+1W+1M Green + Prev 1W Red (ALL NSE)*: {len(f6_df)} stocks\n"
     msg += f"7️⃣ *1D+1W+1M Green (ALL NSE)*: {len(f7_df)} stocks\n"
     msg += f"7️⃣.1️⃣ *1D+1W+1M Green + File 2.1 Logic (ALL NSE)*: {len(f7_1_df)} stocks\n"
+    msg += f"7️⃣.2️⃣ *1D+1W+1M Green (Nifty 50)*: {len(f7_2_df)} stocks\n"
     msg += f"8️⃣ *1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE)*: {len(f8_df)} stocks\n"
     msg += f"9️⃣ *Prev 1D Red + 1D Green + 1M Green + Prev 1M Green + Vol Contraction (ALL NSE)*: {len(f9_df)} stocks\n"
     msg += f"9️⃣.1️⃣ *Prev 1D Red + 1D Green + 1M Green + Prev 1M Red + Vol Contraction (ALL NSE)*: {len(f9_1_df)} stocks\n"
@@ -213,7 +215,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
             msg += f"• *{row['Symbol']}* (₹{row['Price (₹)']}): 🟢 1D ({row['1D %']}%) 1W ({row['1W %']}%) 1M ({row['1M %']}%) | 🔴 Prev 1M\n"
         msg += "\n"
             
-    msg += f"📁 24 separate strategy Excel files attached below."
+    msg += f"📁 25 separate strategy Excel files attached below."
     return msg
 
 
@@ -283,6 +285,7 @@ def run_daily_notification():
     f6_df = df_all[df_all["1D+1W+1M Green Prev 1W Red"] == "YES"]
     f7_df = df_all[df_all["1D+1W+1M Green"] == "YES"]
     f7_1_df = df_all[df_all["1D+1W+1M Green File 2.1 Logic"] == "YES"]
+    f7_2_df = df_n50[df_n50["1D+1W+1M Green"] == "YES"]
     f8_df = df_all[df_all["1D Red Prev 1W Red 1W Green Prev 1M Red 1M Green"] == "YES"]
     f9_df = df_all[df_all["1M Green Prev 1M Green Vol Contraction"] == "YES"]
     f9_1_df = df_all[df_all["Prev 1D Red 1D Green 1M Green Prev 1M Red Vol Contraction"] == "YES"]
@@ -375,6 +378,12 @@ def run_daily_notification():
         f7_1_df.to_excel(writer, sheet_name="7.1 3TF Green 2.1 Logic", index=False)
         df_all.to_excel(writer, sheet_name="ALL NSE Stocks Signals", index=False)
 
+    # File 7.2: 1D+1W+1M Green (NIFTY 50)
+    file_7_2 = os.path.join(out_dir, f"pure_3tf_green_candle_NIFTY50_{timestamp_str}.xlsx")
+    with pd.ExcelWriter(file_7_2, engine="openpyxl") as writer:
+        f7_2_df.to_excel(writer, sheet_name="7.2 3TF Green NIFTY50", index=False)
+        df_n50.to_excel(writer, sheet_name="Nifty 50 All Signals", index=False)
+
     # File 8: 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (ALL NSE STOCKS)
     file_8 = os.path.join(out_dir, f"candle_pattern_1d_red_prev_1w_red_1w_green_prev_1m_red_1m_green_ALL_NSE_{timestamp_str}.xlsx")
     with pd.ExcelWriter(file_8, engine="openpyxl") as writer:
@@ -441,7 +450,7 @@ def run_daily_notification():
         f13_3_df.to_excel(writer, sheet_name="13.3 13 Logic NIFTY50", index=False)
         df_n50.to_excel(writer, sheet_name="Nifty 50 All Signals", index=False)
 
-    print(f"💾 Saved 24 Strategy Files:")
+    print(f"💾 Saved 25 Strategy Files:")
     print(f"   1. {file_1} ({len(f1_df)} stocks)")
     print(f"   1.7 {file_1_7} ({len(f1_7_df)} stocks)")
     print(f"   2. {file_2} ({len(f2_df)} stocks)")
@@ -455,6 +464,7 @@ def run_daily_notification():
     print(f"   6. {file_6} ({len(f6_df)} stocks)")
     print(f"   7. {file_7} ({len(f7_df)} stocks)")
     print(f"   7.1 {file_7_1} ({len(f7_1_df)} stocks)")
+    print(f"   7.2 {file_7_2} ({len(f7_2_df)} stocks)")
     print(f"   8. {file_8} ({len(f8_df)} stocks)")
     print(f"   9. {file_9} ({len(f9_df)} stocks)")
     print(f"   9.1 {file_9_1} ({len(f9_1_df)} stocks)")
@@ -469,8 +479,8 @@ def run_daily_notification():
     
     report_text = build_whatsapp_report(df_all, df_n500, df_n50)
     
-    # Dispatch all 24 files via Telegram Bot
-    print("\n📤 Sending 24 files via Telegram Bot...")
+    # Dispatch all 25 files via Telegram Bot
+    print("\n📤 Sending 25 files via Telegram Bot...")
     for file_path, caption in [
         (file_1, f"1️⃣ File 1: Pure Vol Exp + Deliv Acc [Nifty 500] ({len(f1_df)} stocks) — {date_str}"),
         (file_1_7, f"1️⃣.7️⃣ File 1.7: Vol Exp + Deliv Acc + 3-TF Green [ALL NSE] ({len(f1_7_df)} stocks) — {date_str}"),
@@ -485,6 +495,7 @@ def run_daily_notification():
         (file_6, f"6️⃣ File 6: 1D+1W+1M Green + Prev 1W Red [ALL NSE] ({len(f6_df)} stocks) — {date_str}"),
         (file_7, f"7️⃣ File 7: 1D+1W+1M Green [ALL NSE] ({len(f7_df)} stocks) — {date_str}"),
         (file_7_1, f"7️⃣.1️⃣ File 7.1: 1D+1W+1M Green + File 2.1 Logic [ALL NSE] ({len(f7_1_df)} stocks) — {date_str}"),
+        (file_7_2, f"7️⃣.2️⃣ File 7.2: 1D+1W+1M Green [NIFTY 50] ({len(f7_2_df)} stocks) — {date_str}"),
         (file_8, f"8️⃣ File 8: 1D Red + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green [ALL NSE] ({len(f8_df)} stocks) — {date_str}"),
         (file_9, f"9️⃣ File 9: Prev 1D Red + 1D Green + 1M Green + Prev 1M Green + Vol Contraction [ALL NSE] ({len(f9_df)} stocks) — {date_str}"),
         (file_9_1, f"9️⃣.1️⃣ File 9.1: Prev 1D Red + 1D Green + 1M Green + Prev 1M Red + Vol Contraction [ALL NSE] ({len(f9_1_df)} stocks) — {date_str}"),
@@ -505,7 +516,7 @@ def run_daily_notification():
     if media_id:
         send_whatsapp_template_meta(media_id, file_3, report_text)
 
-    print("\n🎉 Multi-Timeframe 24-file notification pipeline finished successfully!\n")
+    print("\n🎉 Multi-Timeframe 25-file notification pipeline finished successfully!\n")
 
 
 if __name__ == "__main__":
