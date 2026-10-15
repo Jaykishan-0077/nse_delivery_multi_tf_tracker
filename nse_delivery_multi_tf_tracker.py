@@ -57,6 +57,45 @@ def get_nifty500_symbols():
     return None
 
 
+NIFTY_50_FALLBACK = [
+    "ADANIENT", "ADANIPORTS", "APOLLOHOSP", "ASIANPAINT", "AXISBANK",
+    "BAJAJ-AUTO", "BAJFINANCE", "BAJAJFINSV", "BEL", "BPCL",
+    "BHARTIARTL", "BRITANNIA", "CIPLA", "COALINDIA", "DRREDDY",
+    "EICHERMOT", "GRASIM", "HCLTECH", "HDFCBANK", "HDFCLIFE",
+    "HEROMOTOCO", "HINDALCO", "HINDUNILVR", "ICICIBANK", "ITC",
+    "INDUSINDBK", "INFY", "JSWSTEEL", "KOTAKBANK", "LT",
+    "M&M", "MARUTI", "NTPC", "NESTLEIND", "ONGC",
+    "POWERGRID", "RELIANCE", "SBILIFE", "SHRIRAMFIN", "SBIN",
+    "SUNPHARMA", "TCS", "TATACONSUM", "TATAMOTORS", "TATASTEEL",
+    "TECHM", "TITAN", "TRENT", "ULTRACEMCO", "WIPRO"
+]
+
+
+def get_nifty50_symbols():
+    """Fetch official Nifty 50 stock symbols."""
+    urls = [
+        "https://archives.nseindia.com/content/indices/ind_nifty50list.csv",
+        "https://niftyindices.com/IndexAutomation-Concept/Indices/data/ind_nifty50list.csv",
+        "https://raw.githubusercontent.com/anandkunal/indian-stock-market-symbols/main/nifty50.csv"
+    ]
+    for url in urls:
+        try:
+            req = requests.get(url, headers=NSE_HEADERS, timeout=10)
+            if req.status_code == 200:
+                df = pd.read_csv(io.StringIO(req.text), on_bad_lines='skip')
+                for col in ["Symbol", "symbol", "SYMBOL", "Ticker"]:
+                    if col in df.columns:
+                        symbols = df[col].astype(str).str.strip().unique().tolist()
+                        clean_syms = [s for s in symbols if s and s != "nan"]
+                        if len(clean_syms) >= 40:
+                            return sorted(clean_syms)
+        except Exception:
+            continue
+            
+    print("ℹ️ Using NIFTY 50 fallback constituent list...")
+    return sorted(NIFTY_50_FALLBACK)
+
+
 def get_trading_days(count=30):
     """Generate potential NSE trading days going backwards from today."""
     days = []
@@ -527,6 +566,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # 13.2 1D Red + Prev 1D Red + 1W Red + 1M Red + (1D Open & Close > Prev Close) + all logic of 2.1 file
     pattern_strat13_2 = pattern_strat13 and pure_deliv_acc_vol_dec_accelerating
     candle_pattern_strat13_2 = pattern_strat13_2
+
+    # 13.3 1D Red + Prev 1D Red + 1W Red + 1M Red + (1D Open & Close > Prev Close) (NIFTY 50)
+    pattern_strat13_3 = pattern_strat13
+    candle_pattern_strat13_3 = pattern_strat13_3
 
     return {
         "Symbol": symbol,
