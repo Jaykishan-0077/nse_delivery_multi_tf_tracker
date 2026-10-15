@@ -545,6 +545,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_strat10_2 = (cand_prev_1d == "RED") and (cand_1d == "GREEN") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN") and c_info.get("Prev 1M Vol Less", False)
     candle_pattern_strat10_2 = pattern_strat10_2
 
+    # 10.3 Prev 1D Red + 1D Green + Prev 1W Red + 1W Green + Prev 1M Red + 1M Green (NIFTY 50)
+    pattern_strat10_3 = pattern_strat10
+    candle_pattern_strat10_3 = pattern_strat10_3
+
     # 13. 1D Red + Prev 1D Red + 1W Red + 1M Red + (1D Open & Close > Prev Close)
     pattern_strat13 = (cand_1m == "RED") and (cand_1w == "RED") and (cand_prev_1d == "RED") and (cand_1d == "RED") and c_info.get("1D Open & Close > Prev Close", False)
     candle_pattern_strat13 = pattern_strat13
