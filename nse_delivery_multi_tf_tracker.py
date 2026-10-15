@@ -312,7 +312,10 @@ def fetch_multi_tf_candles(symbols, bhav_data=None):
                     is_prev_1d_red = close_prev_1d < open_prev_1d
                     is_prev_1d_green = close_prev_1d > open_prev_1d
                     is_1d_open_close_gt_prev_close = (open_1d > close_prev_1d) and (close_1d > close_prev_1d)
+                    close_diff_pct = round(((close_1d - close_prev_1d) / close_prev_1d) * 100, 2) if close_prev_1d > 0 else 0.0
                 else:
+                    close_prev_1d = 0.0
+                    close_diff_pct = 0.0
                     is_prev_1d_red = False
                     is_prev_1d_green = False
                     is_1d_open_close_gt_prev_close = False
@@ -393,6 +396,8 @@ def fetch_multi_tf_candles(symbols, bhav_data=None):
                     "1D %": round(((close_1d - open_1d) / open_1d) * 100, 2),
                     "1W %": round(((close_1w - open_1w) / open_1w) * 100, 2),
                     "1M %": round(((close_1m - open_1m) / open_1m) * 100, 2),
+                    "Prev 1D Close": round(close_prev_1d, 2),
+                    "1D Close Diff %": close_diff_pct,
                     "Latest Price": round(close_1d, 2)
                 }
             except Exception:
@@ -458,7 +463,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D Open & Close > Prev Close": False,
         "1W Open & Close > Prev Close": False,
         "1M Open & Close > Prev Close": False,
-        "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0
+        "1D %": 0.0, "1W %": 0.0, "1M %": 0.0, "Latest Price": 0.0,
+        "Prev 1D Close": 0.0, "1D Close Diff %": 0.0
     })
 
     cand_1d = c_info["1D Candle"]
@@ -482,6 +488,12 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
 
     # 1.1 Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1 (NIFTY 50)
     pure_vol_exp_deliv_acc_nifty50 = pure_vol_exp_deliv_acc
+
+    # 1.2 Pure Vol Exp + Deliv Acc + Flat Close (-0.30% <= 1D Close Diff % <= +0.30%) (Nifty 500)
+    close_diff_pct = c_info.get("1D Close Diff %", 0.0)
+    prev_1d_close = c_info.get("Prev 1D Close", 0.0)
+    cond_close_diff_flat = (-0.30 <= close_diff_pct <= 0.30)
+    pure_vol_exp_deliv_acc_flat_close = pure_vol_exp_deliv_acc and cond_close_diff_flat
 
     # 1.7 Pure Vol Exp + Deliv Acc + 3-TF Green (ALL NSE STOCKS)
     pure_vol_exp_deliv_acc_3tf_green = pattern_3tf_green and cond1 and cond2
@@ -597,6 +609,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D %": c_info["1D %"],
         "1W %": c_info["1W %"],
         "1M %": c_info["1M %"],
+        "Prev 1D Close": prev_1d_close,
+        "1D Close Diff %": close_diff_pct,
         "Yest Deliv %": round(yest_deliv_pct, 2),
         "5D Deliv %": round(avg_deliv_5, 2),
         "30D Deliv %": round(avg_deliv_30, 2),
@@ -609,6 +623,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Cond 2 (Vol Exp)": cond2,
         "Vol Dec (30D>5D>Yest)": cond_vol_dec,
         "Pure Vol Exp + Deliv Acc": "YES" if pure_vol_exp_deliv_acc else "NO",
+        "Pure Vol Exp Deliv Acc Flat Close": "YES" if pure_vol_exp_deliv_acc_flat_close else "NO",
         "Pure Vol Exp Deliv Acc 3TF Green": "YES" if pure_vol_exp_deliv_acc_3tf_green else "NO",
         "Pure Deliv Acc + Vol Dec": "YES" if pure_deliv_acc_vol_dec else "NO",
         "Pure Deliv Acc Vol Dec Accelerating": "YES" if pure_deliv_acc_vol_dec_accelerating else "NO",
