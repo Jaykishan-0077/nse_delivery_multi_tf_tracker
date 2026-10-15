@@ -504,6 +504,9 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     # 2.4 Pure Deliv Acc + Vol Dec (NIFTY 50)
     pure_deliv_acc_vol_dec_nifty50 = pure_deliv_acc_vol_dec
 
+    # 2.5 Pure Deliv Acc + Vol Dec + Flat Close (-0.30% <= 1D Close Diff % <= +0.30%) (Nifty 500)
+    pure_deliv_acc_vol_dec_flat_close = pure_deliv_acc_vol_dec and cond_close_diff_flat
+
     # 2.1 Pure Deliv Acc + Vol Dec + Accelerating Delivery Expansion (ALL NSE STOCKS)
     cond_deliv_accelerating = (avg_deliv_5 - avg_deliv_30) < (yest_deliv_pct - avg_deliv_5)
     pure_deliv_acc_vol_dec_accelerating = pure_deliv_acc_vol_dec and cond_deliv_accelerating
@@ -626,6 +629,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Pure Vol Exp Deliv Acc Flat Close": "YES" if pure_vol_exp_deliv_acc_flat_close else "NO",
         "Pure Vol Exp Deliv Acc 3TF Green": "YES" if pure_vol_exp_deliv_acc_3tf_green else "NO",
         "Pure Deliv Acc + Vol Dec": "YES" if pure_deliv_acc_vol_dec else "NO",
+        "Pure Deliv Acc Vol Dec Flat Close": "YES" if pure_deliv_acc_vol_dec_flat_close else "NO",
         "Pure Deliv Acc Vol Dec Accelerating": "YES" if pure_deliv_acc_vol_dec_accelerating else "NO",
         "Pure Deliv Acc Vol Dec Accelerating 1D Green": "YES" if pure_deliv_acc_vol_dec_accelerating_1d_green else "NO",
         "Pure Deliv Acc Vol Dec Accel 1D Red Prev 1D Red GT Prev Close": "YES" if pure_deliv_acc_vol_dec_accel_1d_red_prev_1d_red_gt_prev_close else "NO",
