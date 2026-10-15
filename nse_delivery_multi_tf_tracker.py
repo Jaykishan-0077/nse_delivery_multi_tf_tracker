@@ -477,14 +477,20 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_strat10     = (cand_prev_1d == "RED") and (cand_1d == "GREEN") and (cand_prev_1w == "RED") and (cand_1w == "GREEN") and (cand_prev_1m == "RED") and (cand_1m == "GREEN")
     
     # Strategy Rules:
-    # 1. Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1
+    # 1. Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1 (Nifty 500)
     pure_vol_exp_deliv_acc = cond2 and cond1
+
+    # 1.1 Pure Vol Exp + Deliv Acc: Cond 2 AND Cond 1 (NIFTY 50)
+    pure_vol_exp_deliv_acc_nifty50 = pure_vol_exp_deliv_acc
 
     # 1.7 Pure Vol Exp + Deliv Acc + 3-TF Green (ALL NSE STOCKS)
     pure_vol_exp_deliv_acc_3tf_green = pattern_3tf_green and cond1 and cond2
 
-    # 2. Pure Deliv Acc + Vol Dec: Cond 1 AND Vol Dec
+    # 2. Pure Deliv Acc + Vol Dec: Cond 1 AND Vol Dec (Nifty 500)
     pure_deliv_acc_vol_dec = cond1 and cond_vol_dec
+
+    # 2.4 Pure Deliv Acc + Vol Dec (NIFTY 50)
+    pure_deliv_acc_vol_dec_nifty50 = pure_deliv_acc_vol_dec
 
     # 2.1 Pure Deliv Acc + Vol Dec + Accelerating Delivery Expansion (ALL NSE STOCKS)
     cond_deliv_accelerating = (avg_deliv_5 - avg_deliv_30) < (yest_deliv_pct - avg_deliv_5)
