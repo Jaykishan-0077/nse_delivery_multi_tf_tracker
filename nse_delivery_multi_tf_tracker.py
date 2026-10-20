@@ -450,6 +450,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     deliv_30 = sum(x["DelivQty"] for x in h30)
     avg_deliv_30 = (deliv_30 / vol_30 * 100) if vol_30 > 0 else 0.0
     avg_vol_30 = vol_30 / len(h30)
+    min_vol_30 = min(x["TradedQty"] for x in h30)
 
     # Base Strategy Conditions
     cond1 = (avg_deliv_30 < avg_deliv_5) and (avg_deliv_5 < yest_deliv_pct)  # Deliv Inc
@@ -506,6 +507,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
 
     # 2.5 Pure Deliv Acc + Vol Dec + Flat Close (-0.30% <= 1D Close Diff % <= +0.30%) (Nifty 500)
     pure_deliv_acc_vol_dec_flat_close = pure_deliv_acc_vol_dec and cond_close_diff_flat
+
+    # 2.6 Pure Deliv Acc + Vol Dec + Lowest Volume of Last 30 Days (Nifty 500)
+    cond_lowest_vol_30 = (yest_vol <= min_vol_30)
+    pure_deliv_acc_vol_dec_lowest_vol_30 = pure_deliv_acc_vol_dec and cond_lowest_vol_30
 
     # 2.1 Pure Deliv Acc + Vol Dec + Accelerating Delivery Expansion (ALL NSE STOCKS)
     cond_deliv_accelerating = (avg_deliv_5 - avg_deliv_30) < (yest_deliv_pct - avg_deliv_5)
@@ -620,6 +625,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Yest Volume": int(yest_vol),
         "5D Avg Vol": int(avg_vol_5),
         "30D Avg Vol": int(avg_vol_30),
+        "30D Lowest Vol": int(min_vol_30),
         "Prev 1M Vol": c_info.get("Prev 1M Vol", 0),
         "Avg Monthly Vol": c_info.get("Avg Monthly Vol", 0),
         "Cond 1 (Deliv Inc)": cond1,
@@ -630,6 +636,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Pure Vol Exp Deliv Acc 3TF Green": "YES" if pure_vol_exp_deliv_acc_3tf_green else "NO",
         "Pure Deliv Acc + Vol Dec": "YES" if pure_deliv_acc_vol_dec else "NO",
         "Pure Deliv Acc Vol Dec Flat Close": "YES" if pure_deliv_acc_vol_dec_flat_close else "NO",
+        "Pure Deliv Acc Vol Dec Lowest Vol 30D": "YES" if pure_deliv_acc_vol_dec_lowest_vol_30 else "NO",
         "Pure Deliv Acc Vol Dec Accelerating": "YES" if pure_deliv_acc_vol_dec_accelerating else "NO",
         "Pure Deliv Acc Vol Dec Accelerating 1D Green": "YES" if pure_deliv_acc_vol_dec_accelerating_1d_green else "NO",
         "Pure Deliv Acc Vol Dec Accel 1D Red Prev 1D Red GT Prev Close": "YES" if pure_deliv_acc_vol_dec_accel_1d_red_prev_1d_red_gt_prev_close else "NO",
