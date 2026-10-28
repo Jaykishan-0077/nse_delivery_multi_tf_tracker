@@ -516,6 +516,11 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         pure_deliv_acc_vol_dec and cond_lowest_vol_5 and cond_1d_close_gt_prev_close
     )
 
+    # 2.8 Pure Deliv Acc + Vol Dec + Lowest Volume of Last 5 Days + 1D Close > Prev 1D Close + Flat Close (-0.30% <= 1D Close Diff % <= +0.30%) (ALL NSE STOCKS)
+    pure_deliv_acc_vol_dec_lowest_vol_5_close_gt_flat = (
+        pure_deliv_acc_vol_dec_lowest_vol_5_close_gt_prev and cond_close_diff_flat
+    )
+
     # 2.1 Pure Deliv Acc + Vol Dec + Accelerating Delivery Expansion (ALL NSE STOCKS)
     cond_deliv_accelerating = (avg_deliv_5 - avg_deliv_30) < (yest_deliv_pct - avg_deliv_5)
     pure_deliv_acc_vol_dec_accelerating = pure_deliv_acc_vol_dec and cond_deliv_accelerating
@@ -643,6 +648,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Pure Deliv Acc + Vol Dec": "YES" if pure_deliv_acc_vol_dec else "NO",
         "Pure Deliv Acc Vol Dec Flat Close": "YES" if pure_deliv_acc_vol_dec_flat_close else "NO",
         "Pure Deliv Acc Vol Dec Lowest Vol 5D Close GT Prev": "YES" if pure_deliv_acc_vol_dec_lowest_vol_5_close_gt_prev else "NO",
+        "Pure Deliv Acc Vol Dec Lowest Vol 5D Close GT Flat Close": "YES" if pure_deliv_acc_vol_dec_lowest_vol_5_close_gt_flat else "NO",
         "Pure Deliv Acc Vol Dec Accelerating": "YES" if pure_deliv_acc_vol_dec_accelerating else "NO",
         "Pure Deliv Acc Vol Dec Accelerating 1D Green": "YES" if pure_deliv_acc_vol_dec_accelerating_1d_green else "NO",
         "Pure Deliv Acc Vol Dec Accel 1D Red Prev 1D Red GT Prev Close": "YES" if pure_deliv_acc_vol_dec_accel_1d_red_prev_1d_red_gt_prev_close else "NO",
