@@ -236,7 +236,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
 # ──────────────────────────────────────────────────────────────
 def run_daily_notification():
     print("\n" + "═" * 65)
-    print("   💬 NSE MULTI-TIMEFRAME SCANNER NOTIFIER (5:00 PM IST)")
+    print("   💬 NSE MULTI-TIMEFRAME SCANNER NOTIFIER (7:00 PM IST)")
     print(f"   Run Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("═" * 65 + "\n")
 

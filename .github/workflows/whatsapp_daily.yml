@@ -1,11 +1,11 @@
-name: NSE Delivery Multi-Timeframe Tracker (5:00 PM IST Cloud Runner)
+name: NSE Delivery Multi-Timeframe Tracker (7:00 PM IST Cloud Runner)
 
 on:
   repository_dispatch:
     types: [daily_trigger]
   schedule:
-    # 5:00 PM IST is 11:30 UTC (Monday to Friday)
-    - cron: '30 11 * * 1-5'
+    # 7:00 PM IST is 13:30 UTC (Monday to Friday)
+    - cron: '30 13 * * 1-5'
   push:
     branches: [ main ]
   workflow_dispatch:
