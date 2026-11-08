@@ -162,7 +162,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
     f2_6_df = df_n500[df_n500["Pure Deliv Acc Vol Dec Lowest Vol 5D Close GT Prev"] == "YES"] if not df_n500.empty else pd.DataFrame()
     f2_7_df = df_all[df_all["Pure Deliv Acc Vol Dec 3TF Green"] == "YES"]
     f2_8_df = df_all[df_all["Pure Deliv Acc Vol Dec Lowest Vol 5D Close GT Flat Close"] == "YES"] if not df_all.empty else pd.DataFrame()
-    f2_9_df = df_n500[df_n500["Pure Deliv Acc Vol Dec 5D Only"] == "YES"] if not df_n500.empty else pd.DataFrame()
+    f2_9_df = df_n500[df_n500["Pure Deliv Acc Vol Dec 5D Close GT Flat Close"] == "YES"] if not df_n500.empty else pd.DataFrame()
     f3_df = df_n500[df_n500["Multi-TF Super Signal"] == "YES"]
     f4_df = df_n500[df_n500["Multi-TF Deliv Accumulation"] == "YES"]
     f5_df = df_all[df_all["1D+1W+1M Green Prev 1M Red"] == "YES"]
@@ -198,7 +198,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
     msg += f"2️⃣.6️⃣ *Pure Deliv Acc + Vol Dec (Lowest Vol 5D + 1D Close > Prev Close) (Nifty 500)*: {len(f2_6_df)} stocks\n"
     msg += f"2️⃣.7️⃣ *Pure Deliv Acc + Vol Dec + 3-TF Green (ALL NSE)*: {len(f2_7_df)} stocks\n"
     msg += f"2️⃣.8️⃣ *Pure Deliv Acc + Vol Dec (Lowest Vol 5D + Close > Prev Close + Flat Close) (ALL NSE)*: {len(f2_8_df)} stocks\n"
-    msg += f"2️⃣.9️⃣ *Pure Deliv Acc + Vol Dec (5D Only, No 30D Comp) (Nifty 500)*: {len(f2_9_df)} stocks\n"
+    msg += f"2️⃣.9️⃣ *Pure Deliv Acc + Vol Dec (5D Only + Close > Prev Close + Flat Close) (Nifty 500)*: {len(f2_9_df)} stocks\n"
     msg += f"3️⃣ *Multi-TF Super Signal (Nifty 500)*: {len(f3_df)} stocks\n"
     msg += f"4️⃣ *Multi-TF Deliv Acc + Vol Dec (Nifty 500)*: {len(f4_df)} stocks\n"
     msg += f"5️⃣ *1D+1W+1M Green + Prev 1M Red (ALL NSE)*: {len(f5_df)} stocks\n"
@@ -289,7 +289,7 @@ def run_daily_notification():
     f2_df = df_n500[df_n500["Pure Deliv Acc + Vol Dec"] == "YES"]
     f2_5_df = df_n500[df_n500["Pure Deliv Acc Vol Dec Flat Close"] == "YES"]
     f2_6_df = df_n500[df_n500["Pure Deliv Acc Vol Dec Lowest Vol 5D Close GT Prev"] == "YES"]
-    f2_9_df = df_n500[df_n500["Pure Deliv Acc Vol Dec 5D Only"] == "YES"]
+    f2_9_df = df_n500[df_n500["Pure Deliv Acc Vol Dec 5D Close GT Flat Close"] == "YES"]
     f3_df = df_n500[df_n500["Multi-TF Super Signal"] == "YES"]
     f4_df = df_n500[df_n500["Multi-TF Deliv Accumulation"] == "YES"]
 
@@ -352,7 +352,7 @@ def run_daily_notification():
         f2_df.to_excel(writer, sheet_name="Pure Deliv Acc + Vol Dec", index=False)
         f2_5_df.to_excel(writer, sheet_name="2.5 Close Diff +0.30 to -0.30", index=False)
         f2_6_df.to_excel(writer, sheet_name="2.6 Lowest 5D Vol Close GT", index=False)
-        f2_9_df.to_excel(writer, sheet_name="2.9 Deliv Acc Vol Dec 5D", index=False)
+        f2_9_df.to_excel(writer, sheet_name="2.9 5D Vol GT Flat Close", index=False)
         df_n500.to_excel(writer, sheet_name="Nifty 500 All Signals", index=False)
 
     # File 2.1: Pure Deliv Accumulation + Vol Contraction + Accelerating Deliv Expansion (ALL NSE STOCKS)
@@ -403,10 +403,10 @@ def run_daily_notification():
         f2_8_df.to_excel(writer, sheet_name="2.8 Low 5D Vol GT Flat Close", index=False)
         df_all.to_excel(writer, sheet_name="ALL NSE Stocks Signals", index=False)
 
-    # File 2.9: Pure Deliv Accumulation + Vol Contraction (5D Only, without 30D comparison) (Nifty 500)
-    file_2_9 = os.path.join(out_dir, f"pure_deliv_acc_vol_contraction_5d_only_nifty500_{timestamp_str}.xlsx")
+    # File 2.9: Pure Deliv Accumulation + Vol Contraction (5D Only, without 30D comparison) + Close > Prev Close + Flat Close (Nifty 500)
+    file_2_9 = os.path.join(out_dir, f"pure_deliv_acc_vol_contraction_5d_only_close_gt_flat_close_nifty500_{timestamp_str}.xlsx")
     with pd.ExcelWriter(file_2_9, engine="openpyxl") as writer:
-        f2_9_df.to_excel(writer, sheet_name="2.9 Deliv Acc Vol Dec 5D", index=False)
+        f2_9_df.to_excel(writer, sheet_name="2.9 5D Vol GT Flat Close", index=False)
         df_n500.to_excel(writer, sheet_name="Nifty 500 All Signals", index=False)
 
     # File 3: Multi-TF Super Signal (Nifty 500)
@@ -569,7 +569,7 @@ def run_daily_notification():
         (file_2_6, f"2️⃣.6️⃣ File 2.6: Pure Deliv Acc + Vol Dec [Lowest Vol 5D + Close > Prev Close] [Nifty 500] ({len(f2_6_df)} stocks) — {date_str}"),
         (file_2_7, f"2️⃣.7️⃣ File 2.7: Deliv Acc + Vol Dec + 3-TF Green [ALL NSE] ({len(f2_7_df)} stocks) — {date_str}"),
         (file_2_8, f"2️⃣.8️⃣ File 2.8: Pure Deliv Acc + Vol Dec [Lowest Vol 5D + Close > Prev Close + Flat Close ±0.30%] [ALL NSE] ({len(f2_8_df)} stocks) — {date_str}"),
-        (file_2_9, f"2️⃣.9️⃣ File 2.9: Pure Deliv Acc + Vol Dec [5D Only, No 30D Comp] [Nifty 500] ({len(f2_9_df)} stocks) — {date_str}"),
+        (file_2_9, f"2️⃣.9️⃣ File 2.9: Pure Deliv Acc + Vol Dec [5D Only + Close > Prev Close + Flat Close ±0.30%] [Nifty 500] ({len(f2_9_df)} stocks) — {date_str}"),
         (file_3, f"3️⃣ File 3: Multi-TF Super Signal [Nifty 500] ({len(f3_df)} stocks) — {date_str}"),
         (file_4, f"4️⃣ File 4: Multi-TF Deliv Accumulation [Nifty 500] ({len(f4_df)} stocks) — {date_str}"),
         (file_5, f"5️⃣ File 5: 1D+1W+1M Green + Prev 1M Red [ALL NSE] ({len(f5_df)} stocks) — {date_str}"),
