@@ -181,7 +181,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
     f13_1_df = df_all[df_all["1D Red Prev 1D Red 1W Red Prev 1W Red 1M Red Prev 1M Red 1D 1W 1M Open Close GT Prev Close"] == "YES"]
     f13_2_df = df_all[df_all["1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close File 2.1 Logic"] == "YES"]
     f13_3_df = df_n50[df_n50["1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close"] == "YES"] if not df_n50.empty else pd.DataFrame()
-    f14_df = df_n500[df_n500["Pure Deliv Dec + Vol Exp"] == "YES"] if not df_n500.empty else pd.DataFrame()
+    f14_df = df_n500[df_n500["Pure Deliv Dec + Vol Exp Close GT Flat Close"] == "YES"] if not df_n500.empty else pd.DataFrame()
     
     msg = f"🌟 *NSE DAILY 33-STRATEGY SCANNER REPORT* ({date_str})\n"
     msg += f"─────────────────────────────────────────────\n"
@@ -218,7 +218,7 @@ def build_whatsapp_report(df_all, df_n500, df_n50=None):
     msg += f"1️⃣3️⃣.1️⃣ *1D+1W+1M Red + Prev 1D+1W+1M Red + 1D Open&Close > Prev 1D Close + 1W Open&Close > Prev 1W Close + 1M Open&Close > Prev 1M Close (ALL NSE)*: {len(f13_1_df)} stocks\n"
     msg += f"1️⃣3️⃣.2️⃣ *1D Red + Prev 1D Red + 1W Red + 1M Red + (1D Open&Close > Prev Close) + File 2.1 Logic (ALL NSE)*: {len(f13_2_df)} stocks\n"
     msg += f"1️⃣3️⃣.3️⃣ *1D Red + Prev 1D Red + 1W Red + 1M Red + (1D Open & Close > Prev Close) (Nifty 50)*: {len(f13_3_df)} stocks\n"
-    msg += f"1️⃣4️⃣ *Pure Deliv Dec + Vol Exp (Nifty 500)*: {len(f14_df)} stocks\n\n"
+    msg += f"1️⃣4️⃣ *Pure Deliv Dec + Vol Exp (Close > Prev Close + Flat Close) (Nifty 500)*: {len(f14_df)} stocks\n\n"
     
     if not f3_df.empty:
         msg += f"🏆 *TOP MULTI-TF SUPER SIGNALS (File 3)*:\n"
@@ -292,7 +292,7 @@ def run_daily_notification():
     f2_5_df = df_n500[df_n500["Pure Deliv Acc Vol Dec Flat Close"] == "YES"]
     f2_6_df = df_n500[df_n500["Pure Deliv Acc Vol Dec Lowest Vol 5D Close GT Prev"] == "YES"]
     f2_9_df = df_n500[df_n500["Pure Deliv Acc Vol Dec 5D Close GT Flat Close"] == "YES"]
-    f14_df = df_n500[df_n500["Pure Deliv Dec + Vol Exp"] == "YES"]
+    f14_df = df_n500[df_n500["Pure Deliv Dec + Vol Exp Close GT Flat Close"] == "YES"]
     f3_df = df_n500[df_n500["Multi-TF Super Signal"] == "YES"]
     f4_df = df_n500[df_n500["Multi-TF Deliv Accumulation"] == "YES"]
 
@@ -520,10 +520,10 @@ def run_daily_notification():
         f13_3_df.to_excel(writer, sheet_name="13.3 13 Logic NIFTY50", index=False)
         df_n50.to_excel(writer, sheet_name="Nifty 50 All Signals", index=False)
 
-    # File 14: Pure Deliv Dec + Vol Exp (Nifty 500)
-    file_14 = os.path.join(out_dir, f"pure_deliv_dec_vol_expansion_nifty500_{timestamp_str}.xlsx")
+    # File 14: Pure Deliv Dec + Vol Exp + Close > Prev Close + Flat Close (Nifty 500)
+    file_14 = os.path.join(out_dir, f"pure_deliv_dec_vol_expansion_close_gt_flat_close_nifty500_{timestamp_str}.xlsx")
     with pd.ExcelWriter(file_14, engine="openpyxl") as writer:
-        f14_df.to_excel(writer, sheet_name="Pure Deliv Dec + Vol Exp", index=False)
+        f14_df.to_excel(writer, sheet_name="14 Deliv Dec Vol GT Flat", index=False)
         df_n500.to_excel(writer, sheet_name="Nifty 500 All Signals", index=False)
 
     print(f"💾 Saved 33 Strategy Files:")
@@ -598,7 +598,7 @@ def run_daily_notification():
         (file_13_1, f"1️⃣3️⃣.1️⃣ File 13.1: 1D+1W+1M Red + Prev 1D+1W+1M Red + (1D Open&Close > Prev 1D Close) + (1W Open&Close > Prev 1W Close) + (1M Open&Close > Prev 1M Close) [ALL NSE] ({len(f13_1_df)} stocks) — {date_str}"),
         (file_13_2, f"1️⃣3️⃣.2️⃣ File 13.2: 1D+1W+1M Red + Prev 1D Red + (1D Open&Close > Prev Close) + File 2.1 Logic [ALL NSE] ({len(f13_2_df)} stocks) — {date_str}"),
         (file_13_3, f"1️⃣3️⃣.3️⃣ File 13.3: 1D Red + Prev 1D Red + 1W Red + 1M Red + (1D Open & Close > Prev Close) [NIFTY 50] ({len(f13_3_df)} stocks) — {date_str}"),
-        (file_14, f"1️⃣4️⃣ File 14: Pure Deliv Dec + Vol Exp [Nifty 500] ({len(f14_df)} stocks) — {date_str}"),
+        (file_14, f"1️⃣4️⃣ File 14: Pure Deliv Dec + Vol Exp [Close > Prev Close + Flat Close ±0.30%] [Nifty 500] ({len(f14_df)} stocks) — {date_str}"),
     ]:
         send_telegram_file(file_path, caption)
         import time; time.sleep(1.5)

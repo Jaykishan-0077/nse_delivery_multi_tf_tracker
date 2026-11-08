@@ -622,8 +622,10 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_strat13_3 = pattern_strat13
     candle_pattern_strat13_3 = pattern_strat13_3
 
-    # 14. Pure Deliv Dec + Vol Exp: Deliv Dec AND Vol Exp (Nifty 500)
-    pure_deliv_dec_vol_exp = cond_deliv_dec and cond2
+    # 14. Pure Deliv Dec + Vol Exp + Close > Prev Close + Flat Close (-0.30% <= 1D Close Diff % <= +0.30%) (Nifty 500)
+    pure_deliv_dec_vol_exp_close_gt_flat = (
+        cond_deliv_dec and cond2 and cond_1d_close_gt_prev_close and cond_close_diff_flat
+    )
 
     return {
         "Symbol": symbol,
@@ -680,7 +682,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close": "YES" if candle_pattern_strat13 else "NO",
         "1D Red Prev 1D Red 1W Red Prev 1W Red 1M Red Prev 1M Red 1D 1W 1M Open Close GT Prev Close": "YES" if candle_pattern_strat13_1 else "NO",
         "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close File 2.1 Logic": "YES" if candle_pattern_strat13_2 else "NO",
-        "Pure Deliv Dec + Vol Exp": "YES" if pure_deliv_dec_vol_exp else "NO"
+        "Pure Deliv Dec + Vol Exp Close GT Flat Close": "YES" if pure_deliv_dec_vol_exp_close_gt_flat else "NO"
     }
 
 
