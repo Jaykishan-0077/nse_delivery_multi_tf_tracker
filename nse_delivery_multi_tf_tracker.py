@@ -457,6 +457,7 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     cond1 = (avg_deliv_30 < avg_deliv_5) and (avg_deliv_5 < yest_deliv_pct)  # Deliv Inc
     cond2 = (avg_vol_30 < avg_vol_5) and (avg_vol_5 < yest_vol)              # Vol Exp
     cond_vol_dec = (avg_vol_30 > avg_vol_5) and (avg_vol_5 > yest_vol)      # Vol Dec (30D Vol > 5D Vol > Yest Vol)
+    cond_deliv_dec = (avg_deliv_30 > avg_deliv_5) and (avg_deliv_5 > yest_deliv_pct)  # Deliv Dec (30D Deliv > 5D Deliv > Yest Deliv)
 
     # Multi-Timeframe Candle Info
     c_info = candle_dict.get(symbol, {
@@ -621,6 +622,9 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
     pattern_strat13_3 = pattern_strat13
     candle_pattern_strat13_3 = pattern_strat13_3
 
+    # 14. Pure Deliv Dec + Vol Exp: Deliv Dec AND Vol Exp (Nifty 500)
+    pure_deliv_dec_vol_exp = cond_deliv_dec and cond2
+
     return {
         "Symbol": symbol,
         "Price (₹)": c_info["Latest Price"],
@@ -675,7 +679,8 @@ def compute_multi_tf_stats(symbol, daily_dfs, candle_dict):
         "Prev 1D Red 1D Green Prev 1W Red 1W Green Prev 1M Red 1M Green Vol Contraction": "YES" if candle_pattern_strat10_2 else "NO",
         "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close": "YES" if candle_pattern_strat13 else "NO",
         "1D Red Prev 1D Red 1W Red Prev 1W Red 1M Red Prev 1M Red 1D 1W 1M Open Close GT Prev Close": "YES" if candle_pattern_strat13_1 else "NO",
-        "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close File 2.1 Logic": "YES" if candle_pattern_strat13_2 else "NO"
+        "1D Red Prev 1D Red 1W Red 1M Red Open Close GT Prev Close File 2.1 Logic": "YES" if candle_pattern_strat13_2 else "NO",
+        "Pure Deliv Dec + Vol Exp": "YES" if pure_deliv_dec_vol_exp else "NO"
     }
 
 
