@@ -27,12 +27,12 @@ from nse_delivery_multi_tf_tracker import (
 # ──────────────────────────────────────────────────────────────
 # CONFIGURATION (Meta Official API & Telegram)
 # ──────────────────────────────────────────────────────────────
-META_PHONE_NUMBER_ID = os.environ.get("META_PHONE_NUMBER_ID", "1245645765305543")
-META_ACCESS_TOKEN    = os.environ.get("META_ACCESS_TOKEN", "EAAZASTyCbQ10BSRxUSwZCZBrk6CzKCyHMDkaYq0QcLD8l6c1R69Jk1SRXPpTS2PXBgnjPZALsgQKBfeTZBJleq5OEpAC16FgZAb9g3sM0t9X9LZBj7ZAqw78hj2WR9UAL5GjYrBuNLhr1xnBaJaQWva1eAyvYMgyFHQHZBttZAXoawjOeDcloSK2zCARMaRFoM5wZDZD")
-RECIPIENT_PHONE      = os.environ.get("RECIPIENT_PHONE", "919898501383")
+META_PHONE_NUMBER_ID = os.environ.get("META_PHONE_NUMBER_ID", "")
+META_ACCESS_TOKEN    = os.environ.get("META_ACCESS_TOKEN", "")
+RECIPIENT_PHONE      = os.environ.get("RECIPIENT_PHONE", "")
 
-TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "8989474593:AAGITtd0pWZrHZXqQZjX5JUvgsBYZFATdxA")
-TELEGRAM_CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "1948266239")
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 
 # ──────────────────────────────────────────────────────────────
