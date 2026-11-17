@@ -27,6 +27,16 @@ from nse_delivery_multi_tf_tracker import (
 # ──────────────────────────────────────────────────────────────
 # CONFIGURATION (Meta Official API & Telegram)
 # ──────────────────────────────────────────────────────────────
+# Automatically load local .env if present (gitignored)
+env_file = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(env_file):
+    with open(env_file, "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+
 META_PHONE_NUMBER_ID = os.environ.get("META_PHONE_NUMBER_ID", "")
 META_ACCESS_TOKEN    = os.environ.get("META_ACCESS_TOKEN", "")
 RECIPIENT_PHONE      = os.environ.get("RECIPIENT_PHONE", "")
